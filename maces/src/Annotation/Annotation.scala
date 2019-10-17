@@ -15,9 +15,7 @@ object AnnotationHierarchy {
   implicit def str2ah(path: String): AnnotationHierarchy = AnnotationHierarchy(path.split('.'))
 }
 
-trait AnnotationValue {
-  val value: Any
-}
+trait AnnotationValue
 
 /** [[Annotation]] is a [[String]] -> [[AnnotationValue]],
  *
@@ -47,11 +45,24 @@ case class ScratchPad(annotations: Set[Annotation]) {
 
   def find(key: AnnotationHierarchy): Set[Annotation] = annotations.filter(annotation => annotation.key.is(key))
 
+  def get(key: AnnotationHierarchy): Option[Annotation] = {
+    val findResult = find(key)
+    findResult.size match {
+      case 1 => Some(findResult.head)
+      case 0 => None
+      case _ =>
+        /** TODO: add warning after finish logger framework*/
+        print(s"[EE] $key matches multi annotations")
+        None
+    }
+  }
+
   def update(key: AnnotationHierarchy, anno: Annotation): ScratchPad = {
     val findResult = find(key)
     findResult.size match {
       case 1 => delete(findResult.head.key).add(anno)
       case 0 =>
+        /** TODO: add warning after finish logger framework*/
         print("[WW] update $key matches none annotations")
         add(anno)
       case _ =>
