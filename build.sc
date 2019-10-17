@@ -6,10 +6,17 @@ object maces extends ScalaModule with PublishModule {
   def scalaVersion = "2.12.8"
 
   override def ivyDeps = Agg(
-    ivy"edu.berkeley.cs::firrtl:1.2-SNAPSHOT",
-    ivy"edu.berkeley.cs::chisel3:3.2-SNAPSHOT",
-    ivy"org.scalatest::scalatest:3.0.5"
+    ivy"com.lihaoyi::upickle:0.7.5",
+    ivy"com.lihaoyi::os-lib:0.2.7",
+    ivy"com.lihaoyi::upickle:0.8.0",
+    ivy"com.lihaoyi::ammonite-ops:1.7.1",
   )
+
+  object tests extends Tests {
+    def ivyDeps = Agg(ivy"com.lihaoyi::utest:0.7.1")
+
+    def testFrameworks = Seq("utest.runner.Framework")
+  }
 
   def publishVersion = "0.0.1"
 
