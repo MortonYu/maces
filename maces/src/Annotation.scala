@@ -1,13 +1,15 @@
-package maces.annotation
+package maces
 
 case class AnnotationHierarchy(path: Seq[String]) {
-  /**TODO: add wildcard here for better match,
+  /** TODO: add wildcard here for better match,
    * currently only support entire equality check.
    * maybe reinvent NFA later
    * */
   def is(that: AnnotationHierarchy): Boolean = {
     this == that
   }
+
+  def +(that: AnnotationHierarchy): AnnotationHierarchy = AnnotationHierarchy(this.path ++ that.path)
 }
 
 object AnnotationHierarchy {
@@ -45,13 +47,14 @@ case class ScratchPad(annotations: Set[Annotation]) {
 
   def find(key: AnnotationHierarchy): Set[Annotation] = annotations.filter(annotation => annotation.key.is(key))
 
-  def get(key: AnnotationHierarchy): Option[Annotation] = {
+  def get(key: AnnotationHierarchy): Option[AnnotationValue] = {
     val findResult = find(key)
     findResult.size match {
-      case 1 => Some(findResult.head)
+      case 1 => Some(findResult.head.value)
       case 0 => None
       case _ =>
-        /** TODO: add warning after finish logger framework*/
+
+        /** TODO: add warning after finish logger framework */
         print(s"[EE] $key matches multi annotations")
         None
     }
@@ -62,7 +65,8 @@ case class ScratchPad(annotations: Set[Annotation]) {
     findResult.size match {
       case 1 => delete(findResult.head.key).add(anno)
       case 0 =>
-        /** TODO: add warning after finish logger framework*/
+
+        /** TODO: add warning after finish logger framework */
         print("[WW] update $key matches none annotations")
         add(anno)
       case _ =>
