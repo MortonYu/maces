@@ -5,23 +5,36 @@ trait Phase {
 
   val scratchPadIn: ScratchPad
 
+  var scratchPad: ScratchPad = scratchPadIn
+
   def prePhase: Seq[ScratchPad => Phase] = Seq()
 
-  def transform(scratchPad: ScratchPad): ScratchPad
+  def transform: ScratchPad
 
   def postPhase: Seq[ScratchPad => Phase] = Seq()
 
   def scratchPadOut: ScratchPad = {
     /** Although 1L is easy to write here, I choose a clear way to express it. */
-    val scratchPadAfterPrePhase = if (prePhase.nonEmpty) prePhase.foldLeft(scratchPadIn)((s, p) => p(s).scratchPadOut) else scratchPadIn
-    val scratchPadAfterTransform = transform(scratchPadAfterPrePhase)
-    val scratchPadAfterPostPhase = if (postPhase.nonEmpty) postPhase.foldLeft(scratchPadAfterTransform)((s, p) => p(s).scratchPadOut) else scratchPadAfterTransform
-    scratchPadAfterPostPhase
+    /** prePhase */
+    scratchPad = if (prePhase.nonEmpty) prePhase.foldLeft(scratchPad)((s, p) => p(s).scratchPadOut) else scratchPad
+
+    /** transform */
+    scratchPad = transform
+
+    /** postPhase */
+    scratchPad = if (postPhase.nonEmpty) postPhase.foldLeft(scratchPad)((s, p) => p(s).scratchPadOut) else scratchPad
+    scratchPad
   }
 }
 
+trait Stage extends Phase {
+  def phases: Seq[ScratchPad => Phase]
+
+  def transform: ScratchPad = phases.foldLeft(scratchPad)((s, p) => p(s).scratchPadOut)
+}
+
 case class IdentityPhase(scratchPadIn: ScratchPad) extends Phase {
-  def transform(scratchPad: ScratchPad): ScratchPad = scratchPadIn
+  def transform: ScratchPad = scratchPadIn
 }
 
 abstract case class FilterPhase(scratchPadIn: ScratchPad) extends Phase {
