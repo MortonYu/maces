@@ -3,8 +3,7 @@ package maces.phase
 import maces._
 import maces.annotation._
 
-import ammonite.ops._
-import ammonite.ops.ImplicitWd._
+import os._
 
 trait HasTarCache {
   var scratchPad: ScratchPad
@@ -14,10 +13,11 @@ trait HasTarCache {
 
 trait HasTarExternalFunction {
   def untar(file: Path, targetDirectory: Path) = {
-    mkdir ! targetDirectory
-
+    /** clear all existed files*/
+    remove.all(targetDirectory)
+    makeDir(targetDirectory)
     /** external dependency: tar */
-    %%('tar, "xf", file, "-C", targetDirectory)
+    proc("tar", "xf", file, "-C", targetDirectory).call()
   }
 }
 
@@ -25,7 +25,8 @@ case class UntarVendorFiles(scratchPadIn: ScratchPad) extends Phase with HasTarC
   def transform: ScratchPad = {
     /** vendor.tars are std cell or PDK files provided by vendor. */
     val tarFiles: Seq[Path] = scratchPad.get("vendor.tars").get.asInstanceOf[TarsPathAnnotationValue].paths
-    mkdir ! tarCache
+    /** TODO: move this to InitializationStage*/
+    makeDir(tarCache)
     tarFiles.foreach(f => untar(f, tarCache / f.last))
     scratchPad
   }
@@ -41,11 +42,11 @@ case class UntarInternalPackages(scratchPadIn: ScratchPad) extends Phase with Ha
     val tarFiles: Seq[Path] = scratchPad.get("vendor.internal_tars").get.asInstanceOf[RelTarsPathAnnotationValue].paths.map(t => Path(t, tarCache))
     val tarFilesRenamed: Seq[Path] = tarFiles.map { t =>
       val renamedPath = Path(t.toString + ".tmp")
-      mv(t, renamedPath)
+      move(t, renamedPath)
       renamedPath
     }
     (tarFilesRenamed zip tarFiles) foreach (pair => untar(pair._1, pair._2))
-    tarFilesRenamed foreach rm
+    tarFilesRenamed foreach remove.all
     scratchPad
   }
 }

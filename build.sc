@@ -12,6 +12,13 @@ object maces extends ScalaModule with PublishModule {
     ivy"com.lihaoyi::ammonite-ops:1.7.1",
   )
 
+  object contrib extends ScalaModule {
+    def scalaVersion = "2.12.8"
+    object cadence extends ScalaModule {
+      def scalaVersion = "2.12.8" 
+    }
+  }
+
   object tests extends Tests {
     def ivyDeps = Agg(ivy"com.lihaoyi::utest:0.7.1")
 

@@ -3,8 +3,8 @@ package maces.tests
 import maces._
 import maces.annotation._
 import maces.phase._
-import ammonite.ops._
 import os.FilePath
+import ammonite.ops._
 import utest._
 import utest.framework.Formatter
 

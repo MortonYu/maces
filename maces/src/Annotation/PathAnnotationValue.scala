@@ -1,8 +1,7 @@
 package maces.annotation
 
 import maces._
-
-import ammonite.ops._
+import os._
 
 
 trait PathsAnnotationValue extends AnnotationValue {
@@ -33,3 +32,9 @@ case class RelTarsPathAnnotationValue(paths: Seq[RelPath]) extends RelPathsAnnot
 case class DirectoryPathAnnotationValue(path: Path) extends PathAnnotationValue
 
 case class DirectoriesPathAnnotationValue(paths: Seq[Path]) extends PathsAnnotationValue
+
+trait HasWorkspace {
+  var scratchPad: ScratchPad
+
+  def workspace: Path = scratchPad.get("system.workspace").get.asInstanceOf[DirectoryPathAnnotationValue].path
+}

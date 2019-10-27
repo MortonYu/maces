@@ -5,7 +5,7 @@ trait Phase {
 
   val scratchPadIn: ScratchPad
 
-  var scratchPad: ScratchPad = scratchPadIn
+  implicit var scratchPad: ScratchPad = scratchPadIn
 
   def prePhase: Seq[ScratchPad => Phase] = Seq()
 
