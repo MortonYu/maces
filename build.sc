@@ -13,16 +13,6 @@ object maces extends ScalaModule with PublishModule {
     ivy"edu.berkeley.cs::chisel3:3.2-SNAPSHOT",
   )
 
-  object contrib extends ScalaModule {
-    def scalaVersion = "2.12.8"
-    object cadence extends ScalaModule {
-      def scalaVersion = "2.12.8" 
-    }
-    object yosys extends ScalaModule {
-      def scalaVersion = "2.12.8" 
-    }
-  }
-
   object tests extends Tests {
     def ivyDeps = Agg(ivy"com.lihaoyi::utest:0.7.1")
 
