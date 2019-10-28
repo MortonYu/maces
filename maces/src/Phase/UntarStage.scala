@@ -15,7 +15,7 @@ trait HasTarExternalFunction {
   def untar(file: Path, targetDirectory: Path) = {
     /** clear all existed files*/
     remove.all(targetDirectory)
-    makeDir(targetDirectory)
+    makeDir.all(targetDirectory)
     /** external dependency: tar */
     proc("tar", "xf", file, "-C", targetDirectory).call()
   }
@@ -26,7 +26,7 @@ case class UntarVendorFiles(scratchPadIn: ScratchPad) extends Phase with HasTarC
     /** vendor.tars are std cell or PDK files provided by vendor. */
     val tarFiles: Seq[Path] = scratchPad.get("vendor.tars").get.asInstanceOf[TarsPathAnnotationValue].paths
     /** TODO: move this to InitializationStage*/
-    makeDir(tarCache)
+    makeDir.all(tarCache)
     tarFiles.foreach(f => untar(f, tarCache / f.last))
     scratchPad
   }
