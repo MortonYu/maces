@@ -29,6 +29,8 @@ case class TarsPathAnnotationValue(paths: Seq[Path]) extends PathsAnnotationValu
 
 case class RelTarsPathAnnotationValue(paths: Seq[RelPath]) extends RelPathsAnnotationValue
 
+case class BinPathAnnotationValue(path: Path) extends PathAnnotationValue
+
 case class DirectoryPathAnnotationValue(path: Path) extends PathAnnotationValue
 
 case class DirectoriesPathAnnotationValue(paths: Seq[Path]) extends PathsAnnotationValue

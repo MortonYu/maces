@@ -3,6 +3,7 @@ package maces.tests
 import maces._
 import maces.annotation._
 import maces.phase._
+import os._
 import os.SubProcess._
 import utest._
 
@@ -33,10 +34,14 @@ case class DemoPythonWrapperStage(scratchPadIn: ScratchPad) extends Phase with H
   override val node: ProcessNode = new pn0(scratchPadIn)
 
   def env: Map[String, String] = Map(
-    "someEnv0" -> "1",
+    "someEnv0" -> "1"
   )
 
-  def command: Seq[String] = Seq("python", "-u", "-c", "while True: exec(input())")
+  def bin: Path = scratchPad.get("user.bin.python3").get.asInstanceOf[BinPathAnnotationValue].path
+
+  def command: Seq[String] = {
+    Seq(bin.toString, "-u", "-c", "while True: exec(input())")
+  }
 
   override def transform: ScratchPad = run
 }
@@ -45,7 +50,8 @@ object CliSpec extends MacesTestSuite {
   val tests: Tests = Tests {
     test("some test") {
       val scratchPad = ScratchPad(Set(
-        Annotation("system.workspace", DirectoryPathAnnotationValue(testPath))
+        Annotation("system.workspace", DirectoryPathAnnotationValue(testPath)),
+        Annotation("user.bin.python3", BinPathAnnotationValue(Path(proc("which", "python3").call().out.string.dropRight(1))))
       ))
       val scratchPadOut = DemoPythonWrapperStage(scratchPad).scratchPadOut
       assert(scratchPadOut.get("runtime.demo_python_wrapper.pn0_result").get == DemoStringResultAnnotation("2"))
