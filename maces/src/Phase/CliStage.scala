@@ -14,7 +14,7 @@ abstract class ProcessNode {
   def should(stdout: OutputStream): (ScratchPad, Option[ProcessNode]) = (scratchPad, None)
 }
 
-trait HasCli extends HasWorkspace {
+trait CliStage extends Phase with HasWorkspace {
   var scratchPad: ScratchPad
 
   val node: ProcessNode
@@ -53,7 +53,7 @@ trait HasCli extends HasWorkspace {
     if (nextPn.isDefined) runHelper(nextPn.get) else None
   }
 
-  def run = {
+  def transform: ScratchPad = {
     runHelper(node)
     sub.destroy()
     scratchPad

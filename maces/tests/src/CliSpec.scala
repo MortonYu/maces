@@ -9,7 +9,7 @@ import utest._
 
 case class DemoStringResultAnnotation(str: String) extends AnnotationValue
 
-case class DemoPythonWrapperStage(scratchPadIn: ScratchPad) extends Phase with HasCli {
+case class DemoPythonWrapperStage(scratchPadIn: ScratchPad) extends CliStage {
 
   class pn0(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String = "print(1+1)\n"
@@ -42,8 +42,6 @@ case class DemoPythonWrapperStage(scratchPadIn: ScratchPad) extends Phase with H
   def command: Seq[String] = {
     Seq(bin.toString, "-u", "-c", "while True: exec(input())")
   }
-
-  override def transform: ScratchPad = run
 }
 
 object CliSpec extends MacesTestSuite {
