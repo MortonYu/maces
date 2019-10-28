@@ -1,9 +1,9 @@
 package maces.tests
 
-import os.FilePath
 import ammonite.ops._
 import utest._
 import utest.framework.Formatter
+import chisel3._
 
 abstract class MacesTestSuite extends TestSuite {
   def sanitizePath(path: String): String = path.toString.replaceAll(" ", "_").replaceAll("\\W+", "")
@@ -17,4 +17,25 @@ abstract class MacesTestSuite extends TestSuite {
       Set("maces").map(s.getClassName.startsWith(_)).reduce(_ && _)
     }
   }
+  class GCD extends MultiIOModule {
+    val a: UInt = IO(Input(UInt(32.W)))
+    val b: UInt = IO(Input(UInt(32.W)))
+    val e: Bool = IO(Input(Bool()))
+    val z: UInt = IO(Output(UInt(32.W)))
+    val v: Bool = IO(Output(Bool()))
+    val x: UInt = Reg(UInt(32.W))
+    val y: UInt = Reg(UInt(32.W))
+    when(x > y) {
+      x := x -% y
+    }.otherwise {
+      y := y -% x
+    }
+    when(e) {
+      x := a
+      y := b
+    }
+    z := x
+    v := y === 0.U
+  }
+
 }

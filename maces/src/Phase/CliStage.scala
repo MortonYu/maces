@@ -19,11 +19,11 @@ trait CliStage extends Phase with HasWorkspace {
 
   val node: ProcessNode
 
-  def env: Map[String, String]
+  def env: Map[String, String] = Map()
 
   def command: Seq[String]
 
-  /** TODO: still have system env, seems to be a bug?*/
+  /** TODO: still have system env, seems to be a bug? */
   val sub: SubProcess = {
     os.proc(command).spawn(
       cwd = runDir,
@@ -35,6 +35,11 @@ trait CliStage extends Phase with HasWorkspace {
   def stdin: SubProcess.InputStream = sub.stdin
 
   def stdout: SubProcess.OutputStream = sub.stdout
+
+  def waitLineWithFilter(filter: String => Boolean): String = {
+    val currentOutput = stdout.readLine()
+    if(filter(currentOutput)) currentOutput else waitLineWithFilter(filter)
+  }
 
   def stderr: SubProcess.OutputStream = sub.stderr
 

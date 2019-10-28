@@ -33,7 +33,7 @@ case class DemoPythonWrapperStage(scratchPadIn: ScratchPad) extends CliStage {
 
   override val node: ProcessNode = new pn0(scratchPadIn)
 
-  def env: Map[String, String] = Map(
+  override def env: Map[String, String] = Map(
     "someEnv0" -> "1"
   )
 
