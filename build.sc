@@ -7,9 +7,9 @@ object maces extends ScalaModule with PublishModule {
 
   override def ivyDeps = Agg(
     ivy"com.lihaoyi::upickle:0.7.5",
-    ivy"com.lihaoyi::os-lib:0.2.7",
+    ivy"com.lihaoyi::os-lib:0.4.0",
     ivy"com.lihaoyi::upickle:0.8.0",
-    ivy"com.lihaoyi::ammonite-ops:1.7.1",
+    ivy"com.lihaoyi::ammonite-ops:1.8.1",
     ivy"edu.berkeley.cs::chisel3:3.2-SNAPSHOT",
   )
 
