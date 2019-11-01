@@ -15,12 +15,12 @@ case class YosysStage(scratchPadIn: ScratchPad) extends CliStage {
   def topName: String = scratchPad.get("user.input.top").get.asInstanceOf[InstanceNameAnnotationValue].value
 
   class init(var scratchPad: ScratchPad) extends ProcessNode {
-    def input: String = "\n"
+    def input: String = ""
 
-    override def should(stdout: OutputStream): (ScratchPad, Option[ProcessNode]) = {
-      waitLineWithFilter { str =>
+    override def should: (ScratchPad, Option[ProcessNode]) = {
+      assert(waitUntil(5) { str =>
         str.contains("yosys>")
-      }
+      }._1)
       (scratchPad, Some(new readVerilog(scratchPad)))
     }
   }
@@ -28,10 +28,10 @@ case class YosysStage(scratchPadIn: ScratchPad) extends CliStage {
   class readVerilog(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String = "read_verilog " + verilogs.reduce(_ + " " + _) + "\n"
 
-    override def should(stdout: OutputStream): (ScratchPad, Option[ProcessNode]) = {
-      waitLineWithFilter { str =>
+    override def should: (ScratchPad, Option[ProcessNode]) = {
+      assert(waitUntil(20) { str =>
         str.contains("Successfully")
-      }
+      }._1)
       (scratchPad, Some(new readLibertyLibrary(scratchPad)))
     }
   }
@@ -39,10 +39,10 @@ case class YosysStage(scratchPadIn: ScratchPad) extends CliStage {
   class readLibertyLibrary(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String = "read_liberty " + libertyLibraries.reduce(_ + " " + _) + "\n"
 
-    override def should(stdout: OutputStream): (ScratchPad, Option[ProcessNode]) = {
-      waitLineWithFilter { str =>
+    override def should: (ScratchPad, Option[ProcessNode]) = {
+      assert(waitUntil(20) { str =>
         str.contains("Imported")
-      }
+      }._1)
       (scratchPad, Some(new hierarchyCheckAndOpt(scratchPad)))
     }
   }
@@ -50,13 +50,12 @@ case class YosysStage(scratchPadIn: ScratchPad) extends CliStage {
   class hierarchyCheckAndOpt(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String = s"hierarchy -check -top $topName; proc; opt; fsm; opt; memory; opt; techmap; opt;\n"
 
-    override def should(stdout: OutputStream): (ScratchPad, Option[ProcessNode]) = {
+    override def should: (ScratchPad, Option[ProcessNode]) = {
       /** There are 4 opt passes. */
-      Seq.tabulate(4) {
-        waitLineWithFilter { str =>
-          str.contains("Finished OPT passes.")
-        }
-      }
+      assert(waitUntil(30) { str =>
+        val targetString = "Finished OPT passes."
+        str.sliding(targetString.length).count(window => window == targetString) == 4
+      }._1)
       (scratchPad, Some(new writeVerilog(scratchPad)))
     }
   }
@@ -67,8 +66,8 @@ case class YosysStage(scratchPadIn: ScratchPad) extends CliStage {
     def input: String = s"write_verilog $outOptVerilog\n"
 
 
-    override def should(stdout: OutputStream): (ScratchPad, Option[ProcessNode]) = {
-      waitLineWithFilter { str =>
+    override def should: (ScratchPad, Option[ProcessNode]) = {
+      waitUntil(1000) { str =>
         str.contains("Dumping module")
       }
       scratchPad = scratchPad add Annotation("runtime.yosys.opt_verilog", VerilogsPathAnnotationValue(Seq(outOptVerilog)))

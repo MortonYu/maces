@@ -14,8 +14,8 @@ case class DemoPythonWrapperStage(scratchPadIn: ScratchPad) extends CliStage {
   class pn0(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String = "print(1+1)\n"
 
-    override def should(stdout: OutputStream): (ScratchPad, Option[ProcessNode]) = {
-      scratchPad = scratchPad add Annotation("runtime.demo_python_wrapper.pn0_result", DemoStringResultAnnotation(stdout.readLine))
+    override def should: (ScratchPad, Option[ProcessNode]) = {
+      scratchPad = scratchPad add Annotation("runtime.demo_python_wrapper.pn0_result", DemoStringResultAnnotation(waitString(1).dropRight(1)))
       (scratchPad, Some(new pn1(scratchPad)))
     }
   }
@@ -26,8 +26,8 @@ case class DemoPythonWrapperStage(scratchPadIn: ScratchPad) extends CliStage {
         |print(os.environ["someEnv0"])
         |""".stripMargin
 
-    override def should(stdout: OutputStream): (ScratchPad, Option[ProcessNode]) = {
-      (scratchPad add Annotation("runtime.demo_python_wrapper.pn1_result", DemoStringResultAnnotation(stdout.readLine)), None)
+    override def should: (ScratchPad, Option[ProcessNode]) = {
+      (scratchPad add Annotation("runtime.demo_python_wrapper.pn1_result", DemoStringResultAnnotation(waitString(1).dropRight(1))), None)
     }
   }
 
