@@ -8,11 +8,13 @@ import os._
 import os.SubProcess._
 
 case class YosysStage(scratchPadIn: ScratchPad) extends CliStage {
-  def verilogs: Seq[String] = scratchPad.get("user.input.verilogs").get.asInstanceOf[HdlsPathAnnotationValue].paths.map(_.toString)
+  def verilogs: Seq[String] = scratchPad.get("runtime.yosys.verilogs").get.asInstanceOf[HdlsPathAnnotationValue].paths.map(_.toString)
 
-  def libertyLibraries: Seq[String] = scratchPad.get("user.vendor.liberty_cell_libraries").get.asInstanceOf[LibertyCellLibrariesPathAnnotationValue].paths.map(_.toString)
+  def libertyLibraries: Seq[String] = scratchPad.get("runtime.yosys.liberty_cell_paths").get.asInstanceOf[LibertyCellLibrariesPathAnnotationValue].paths.map(_.toString)
 
-  def topName: String = scratchPad.get("user.input.top").get.asInstanceOf[InstanceNameAnnotationValue].value
+  def topName: String = scratchPad.get("runtime.yosys.top").get.asInstanceOf[InstanceNameAnnotationValue].value
+
+  override def workspace: Path = scratchPad.get("runtime.yosys.workspace").get.asInstanceOf[DirectoryPathAnnotationValue].path
 
   class init(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String = ""
@@ -67,7 +69,7 @@ case class YosysStage(scratchPadIn: ScratchPad) extends CliStage {
          |""".stripMargin
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      waitUntil(1){str=>
+      waitUntil(1) { str =>
         str.contains("Mapping DFF cells in module")
       }
       (scratchPad, Some(new writeVerilog(scratchPad)))
@@ -95,7 +97,7 @@ case class YosysStage(scratchPadIn: ScratchPad) extends CliStage {
 
   override val node: ProcessNode = new init(scratchPadIn)
 
-  def bin: Path = scratchPad.get("user.bin.yosys").get.asInstanceOf[BinPathAnnotationValue].path
+  def bin: Path = scratchPad.get("runtime.yosys.bin").get.asInstanceOf[BinPathAnnotationValue].path
 
   def command: Seq[String] = {
     Seq(bin.toString)

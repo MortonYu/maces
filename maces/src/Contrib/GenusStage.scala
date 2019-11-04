@@ -1,4 +1,5 @@
-package Contrib
+package maces.contrib.cadence
+
 
 import maces._
 import maces.annotation._
@@ -18,31 +19,33 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
          |""".stripMargin
   }
 
-  def hdls: Seq[String] = scratchPad.get("runtime.genus.hdls").get.asInstanceOf[HdlsPathAnnotationValue].paths.map(_.toString)
+  override def workspace: Path = scratchPad.get("runtime.genus.workspace").get.asInstanceOf[DirectoryPathAnnotationValue].path
 
-  def lefs: Seq[String] = scratchPad.get("runtime.genus.lefs").get.asInstanceOf[LefsPathAnnotationValue].paths.map(_.toString)
+  def hdls: Seq[String] = scratchPad.get("runtime.genus.hdl_files").get.asInstanceOf[HdlsPathAnnotationValue].paths.map(_.toString)
 
-  def libertyLibraries: Seq[String] = scratchPad.get("runtime.genus.liberty_cell_libraries").get.asInstanceOf[LibertyCellLibrariesPathAnnotationValue].paths.map(_.toString)
+  def lefs: Seq[String] = scratchPad.get("runtime.genus.lef_files").get.asInstanceOf[LefsPathAnnotationValue].paths.map(_.toString)
 
-  def topName: String = scratchPad.get("runtime.genus.top").get.asInstanceOf[InstanceNameAnnotationValue].value
+  def libertyLibraries: Seq[String] = scratchPad.get("runtime.genus.liberty_cell_files").get.asInstanceOf[LibertyCellLibrariesPathAnnotationValue].paths.map(_.toString)
+
+  def topName: String = scratchPad.get("runtime.genus.top_name").get.asInstanceOf[InstanceNameAnnotationValue].value
 
   def coreLimit: Int = scratchPad.get("runtime.genus.core_limit").get.asInstanceOf[CoreLimitAnnotationValue].value
 
-  def autoClockGating: Boolean = scratchPad.get("runtime.genus.auto_gate").get.asInstanceOf[AutoClockGatingAnnotationValue].value
+  def autoClockGating: Boolean = scratchPad.get("runtime.genus.auto_clock_gate").get.asInstanceOf[AutoClockGatingAnnotationValue].value
 
-  def clockGateCellPrefix: String = scratchPad.get("runtime.genus.clock_gate_cell_prefix").get.asInstanceOf[ClockGateCellPrefixAnnotationValue].value
+  def clockGateCellPrefix: String = scratchPad.get("runtime.genus.clock_gate_cell_prefix").get.asInstanceOf[SdcPathAnnotationValue].path.toString
 
-  def clockConstrain: String = ???
+  def clockConstrain: String = scratchPad.get("runtime.genus.clock_constrain_file").get.asInstanceOf[SdcPathAnnotationValue].path.toString
 
-  def pinConstrain: String = ???
+  def pinConstrain: String = scratchPad.get("runtime.genus.pin_constrain_file").get.asInstanceOf[SdcPathAnnotationValue].path.toString
 
-  def tie0Cell: String = ???
+  def tie0Cell: String = scratchPad.get("runtime.genus.tie0_cell").get.asInstanceOf[CellPrefixAnnotationValue].value
 
-  def tie1Cell: String = ???
+  def tie1Cell: String = scratchPad.get("runtime.genus.tie1_cell").get.asInstanceOf[CellPrefixAnnotationValue].value
 
   def corners: Seq[CornerValue] = scratchPad.get("runtime.genus.mmmc_corners").get.asInstanceOf[CornerValuesAnnotationValue].value
 
-  def worstCorner: CornerValue = ???
+  def worstCorner: CornerValue = corners.min
 
   def mmmcFile: Path = {
     val f = workspace / "mmmc.tcl"
@@ -108,7 +111,8 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
   }
 
   class readMMMC(var scratchPad: ScratchPad) extends ProcessNode {
-    def input: String = corners.map(_.mmmcString).reduce(_ + "\n" + _)
+    def input: String = s"create_constraint_mode -name my_constraint_mode -sdc_files [list $clockConstrain $pinConstrain]\n" +
+      corners.map(_.mmmcString).reduce(_ + "\n" + _)
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
       assert(waitUntil(20) { str =>
@@ -171,13 +175,19 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
   }
 
   class writeDesign(var scratchPad: ScratchPad) extends ProcessNode {
+    def outputSdc = workspace / topName + ".mapped.sdc"
+
+    def outputSdf = workspace / topName + ".mapped.sdf"
+
+    def outputVerilog = workspace / topName + ".mapped.v"
+
     def input: String =
       s"""
          |set_db use_tiehilo_for_const duplicate
          |add_tieoffs -high $tie1Cell -low $tie0Cell -max_fanout 1 -verbose
-         |write_hdl > ${workspace / topName + ".mapped.v"}
-         |write_sdc -view ${worstCorner.name}.${worstCorner.cornerType}_view > ${workspace / topName + ".mapped.sdc"}
-         |write_sdf > ${workspace / topName + ".mapped.sdf"}
+         |write_hdl > $outputVerilog
+         |write_sdc -view ${worstCorner.name}.${worstCorner.cornerType}_view > $outputSdc
+         |write_sdf > $outputSdf
          |write_design -innovus -hierarchical -gzip_files $topName
          |""".stripMargin
 
@@ -189,6 +199,10 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
           str.contains("Done mapping")
         ).reduce(_ & _)
       }._1)
+      scratchPad = scratchPad add
+        Annotation("runtime.yosys.syn_verilog", HdlPathAnnotationValue(Path(outputVerilog))) add
+        Annotation("runtime.yosys.syn_sdc", SdcPathAnnotationValue(Path(outputSdc))) add
+        Annotation("runtime.yosys.syn_sdf", SdfPathAnnotationValue(Path(outputSdf)))
       (scratchPad, Some(new readHdl(scratchPad)))
     }
   }

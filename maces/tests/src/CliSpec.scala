@@ -42,13 +42,15 @@ case class DemoPythonWrapperStage(scratchPadIn: ScratchPad) extends CliStage {
   def command: Seq[String] = {
     Seq(bin.toString, "-u", "-c", "while True: exec(input())")
   }
+
+  override def workspace: Path = scratchPad.get("runtime.test.workspace").get.asInstanceOf[DirectoryPathAnnotationValue].path
 }
 
 object CliSpec extends MacesTestSuite {
   val tests: Tests = Tests {
     test("some test") {
       val scratchPad = ScratchPad(Set(
-        Annotation("system.workspace", DirectoryPathAnnotationValue(testPath)),
+        Annotation("runtime.test.workspace", DirectoryPathAnnotationValue(testPath)),
         Annotation("user.bin.python3", BinPathAnnotationValue(Path(proc("which", "python3").call().out.string.dropRight(1))))
       ))
       val scratchPadOut = DemoPythonWrapperStage(scratchPad).scratchPadOut

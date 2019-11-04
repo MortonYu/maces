@@ -17,11 +17,11 @@ object YosysSpec extends MacesTestSuite {
       ))
 
       val scratchPad = ScratchPad(Set(
-        Annotation("user.input.verilogs", HdlsPathAnnotationValue(Seq(workspace / "ChiselStage" / "GCD.v"))),
-        Annotation("user.vendor.liberty_cell_libraries", LibertyCellLibrariesPathAnnotationValue(Seq(resourcesDir / "asap7sc7p5t_24_SIMPLE_RVT_TT.lib"))),
-        Annotation("user.input.top", InstanceNameAnnotationValue("GCD")),
-        Annotation("user.bin.yosys", BinPathAnnotationValue(Path("/usr/bin/yosys"))),
-        Annotation("system.workspace", DirectoryPathAnnotationValue(workspace))
+        Annotation("runtime.yosys.verilogs", HdlsPathAnnotationValue(Seq(workspace / "ChiselStage" / "GCD.v"))),
+        Annotation("runtime.yosys.liberty_cell_paths", LibertyCellLibrariesPathAnnotationValue(Seq(resourcesDir / "asap7sc7p5t_24_SIMPLE_RVT_TT.lib"))),
+        Annotation("runtime.yosys.top", InstanceNameAnnotationValue("GCD")),
+        Annotation("runtime.yosys.bin", BinPathAnnotationValue(Path("/usr/bin/yosys"))),
+        Annotation("runtime.yosys.workspace", DirectoryPathAnnotationValue(workspace))
       ))
       val stage = YosysStage(scratchPad)
       val runDir = stage.runDir
