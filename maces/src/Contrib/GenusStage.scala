@@ -37,15 +37,15 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   def autoClockGating: Boolean = scratchPad.get("runtime.genus.auto_clock_gate").get.asInstanceOf[AutoClockGatingAnnotationValue].value
 
-  def clockGateCellPrefix: String = scratchPad.get("runtime.genus.clock_gate_cell_prefix").get.asInstanceOf[SdcPathAnnotationValue].path.toString
+  def clockGateCellPrefix: String = scratchPad.get("runtime.genus.clock_gate_cell_prefix").get.asInstanceOf[CellNameAnnotationValue].value
 
   def clockConstrain: String = scratchPad.get("runtime.genus.clock_constrain_file").get.asInstanceOf[SdcPathAnnotationValue].path.toString
 
   def pinConstrain: String = scratchPad.get("runtime.genus.pin_constrain_file").get.asInstanceOf[SdcPathAnnotationValue].path.toString
 
-  def tie0Cell: String = scratchPad.get("runtime.genus.tie0_cell").get.asInstanceOf[CellPrefixAnnotationValue].value
+  def tie0Cell: String = scratchPad.get("runtime.genus.tie0_cell").get.asInstanceOf[CellNameAnnotationValue].value
 
-  def tie1Cell: String = scratchPad.get("runtime.genus.tie1_cell").get.asInstanceOf[CellPrefixAnnotationValue].value
+  def tie1Cell: String = scratchPad.get("runtime.genus.tie1_cell").get.asInstanceOf[CellNameAnnotationValue].value
 
   def corners: Seq[CornerValue] = scratchPad.get("runtime.genus.mmmc_corners").get.asInstanceOf[CornerValuesAnnotationValue].value
 

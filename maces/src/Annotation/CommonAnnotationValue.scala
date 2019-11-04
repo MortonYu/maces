@@ -40,7 +40,7 @@ case class CoreLimitAnnotationValue(value: Int) extends AnnotationValue
 
 case class AutoClockGatingAnnotationValue(value: Boolean) extends AnnotationValue
 
-case class CellPrefixAnnotationValue(value: String) extends AnnotationValue
+case class CellNameAnnotationValue(value: String) extends AnnotationValue
 
 case class CornerValue(name: String, cornerType: String, voltage: Double, temperature: Double, lib: Path, qrcTech: Path) extends Ordered[CornerValue] {
   assert(cornerType == "setup" | cornerType == "hold")

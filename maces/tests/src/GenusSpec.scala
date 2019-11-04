@@ -16,22 +16,36 @@ object GenusSpecSpec extends MacesTestSuite {
         new firrtl.TargetDirAnnotation((workspace / "ChiselStage").toString)
       ))
 
+      /** the runtime commercial EDA tool installation should be /opt/eda_tools/vendor/tool_name/tool,
+       * license should be /opt/eda_tools/vendor/vendor.lic
+       * maybe we need to provide a better way to execute this NDA-related test
+       * */
+
       val scratchPad = ScratchPad(Set(
         Annotation("runtime.genus.workspace", DirectoryPathAnnotationValue(workspace)),
-        Annotation("runtime.genus.bin", BinPathAnnotationValue(Path("/usr/bin/yosys"))),
-        Annotation("runtime.genus.env", ???),
-        Annotation("runtime.genus.hdl_files", ???),
-        Annotation("runtime.genus.lef_files", ???),
-        Annotation("runtime.genus.liberty_cell_files", ???),
-        Annotation("runtime.genus.top_name", ???),
-        Annotation("runtime.genus.core_limit", ???),
-        Annotation("runtime.genus.auto_clock_gate", ???),
-        Annotation("runtime.genus.clock_gate_cell_prefix", ???),
-        Annotation("runtime.genus.clock_constrain_file", ???),
-        Annotation("runtime.genus.pin_constrain_file", ???),
-        Annotation("runtime.genus.tie0_cell", ???),
-        Annotation("runtime.genus.tie1_cell", ???),
-        Annotation("runtime.genus.mmmc_corners", ???)
+        Annotation("runtime.genus.bin", BinPathAnnotationValue(Path("/opt/eda_tools/cadence/GENUS/GENUS172/bin/genus"))),
+        Annotation("runtime.genus.env", EnvAnnotationValue(Map(
+          "CADENCE_HOME" -> "/opt/eda_tools/cadence",
+          "CDS_LIC_FILE" -> "/opt/eda_tools/cadence/cadence.lic",
+          "OA_UNSUPPORTED_PLAT" -> "linux_rhel50_gcc48x"
+        ))),
+        Annotation("runtime.genus.hdl_files", HdlsPathAnnotationValue(Seq(workspace / "ChiselStage" / "GCD.v"))),
+        Annotation("runtime.genus.lef_files", LefsPathAnnotationValue(???)),
+        Annotation("runtime.genus.liberty_cell_files", LibertyCellLibrariesPathAnnotationValue(???)),
+        Annotation("runtime.genus.top_name", InstanceNameAnnotationValue("GCD")),
+        Annotation("runtime.genus.core_limit", 1),
+        Annotation("runtime.genus.auto_clock_gate", AutoClockGatingAnnotationValue(true)),
+        Annotation("runtime.genus.clock_gate_cell_prefix", CellNameAnnotationValue("CLKGATE")),
+
+        /** These annotation should be generated from another stage,
+         * however, to break the dependency for test, we directly vendor it  */
+        Annotation("runtime.genus.clock_constrain_file", SdcPathAnnotationValue(???)),
+        Annotation("runtime.genus.pin_constrain_file", SdcPathAnnotationValue(???)),
+        Annotation("runtime.genus.tie0_cell", CellNameAnnotationValue(???)),
+        Annotation("runtime.genus.tie1_cell", CellNameAnnotationValue(???)),
+        Annotation("runtime.genus.mmmc_corners", CornerValuesAnnotationValue(
+          Seq(???)
+        ))
       ))
       val stage = YosysStage(scratchPad)
       val runDir = stage.runDir
