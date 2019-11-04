@@ -21,6 +21,10 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   override def workspace: Path = scratchPad.get("runtime.genus.workspace").get.asInstanceOf[DirectoryPathAnnotationValue].path
 
+  override def env: Map[String, String] = scratchPad.get("runtime.genus.env").get.asInstanceOf[EnvAnnotationValue].value
+
+  def bin: Path = scratchPad.get("user.bin.genus").get.asInstanceOf[BinPathAnnotationValue].path
+
   def hdls: Seq[String] = scratchPad.get("runtime.genus.hdl_files").get.asInstanceOf[HdlsPathAnnotationValue].paths.map(_.toString)
 
   def lefs: Seq[String] = scratchPad.get("runtime.genus.lef_files").get.asInstanceOf[LefsPathAnnotationValue].paths.map(_.toString)
@@ -175,11 +179,11 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
   }
 
   class writeDesign(var scratchPad: ScratchPad) extends ProcessNode {
-    def outputSdc = workspace / topName + ".mapped.sdc"
+    def outputSdc = workspace / topName + "_syn.sdc"
 
-    def outputSdf = workspace / topName + ".mapped.sdf"
+    def outputSdf = workspace / topName + "_syn.sdf"
 
-    def outputVerilog = workspace / topName + ".mapped.v"
+    def outputVerilog = workspace / topName + "_syn.v"
 
     def input: String =
       s"""
@@ -200,9 +204,9 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
         ).reduce(_ & _)
       }._1)
       scratchPad = scratchPad add
-        Annotation("runtime.yosys.syn_verilog", HdlPathAnnotationValue(Path(outputVerilog))) add
-        Annotation("runtime.yosys.syn_sdc", SdcPathAnnotationValue(Path(outputSdc))) add
-        Annotation("runtime.yosys.syn_sdf", SdfPathAnnotationValue(Path(outputSdf)))
+        Annotation("runtime.genus.syn_verilog", HdlPathAnnotationValue(Path(outputVerilog))) add
+        Annotation("runtime.genus.syn_sdc", SdcPathAnnotationValue(Path(outputSdc))) add
+        Annotation("runtime.genus.syn_sdf", SdfPathAnnotationValue(Path(outputSdf)))
       (scratchPad, Some(new readHdl(scratchPad)))
     }
   }
@@ -213,7 +217,6 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   override val node: ProcessNode = new waitInit(scratchPadIn)
 
-  def bin: Path = scratchPad.get("user.bin.yosys").get.asInstanceOf[BinPathAnnotationValue].path
 
   def command: Seq[String] = {
     Seq(bin.toString)
