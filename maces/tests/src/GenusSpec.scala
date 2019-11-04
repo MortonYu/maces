@@ -20,13 +20,27 @@ object GenusSpecSpec extends MacesTestSuite {
        * license should be /opt/eda_tools/vendor/vendor.lic
        * maybe we need to provide a better way to execute this NDA-related test
        * */
+      def genusBin: Path = {
+        val default = Path("/opt/eda_tools/cadence/GENUS/GENUS172/bin/genus")
+        if (default.isFile) default else {
+          println("no default test machine, please input the genus installation path(for example: /opt/eda_tools/cadence/GENUS/GENUS172):")
+          Path(scala.io.StdIn.readLine()) / "bin" / "genus"
+        }
+      }
+
+      def licenseFile: Path = {
+        val default = Path("/opt/eda_tools/cadence/cadence.lic")
+        if (default.isFile) default else {
+          println("no default test machine, please input the genus license path:")
+          Path(scala.io.StdIn.readLine())
+        }
+      }
 
       val scratchPad = ScratchPad(Set(
         Annotation("runtime.genus.workspace", DirectoryPathAnnotationValue(workspace)),
-        Annotation("runtime.genus.bin", BinPathAnnotationValue(Path("/opt/eda_tools/cadence/GENUS/GENUS172/bin/genus"))),
+        Annotation("runtime.genus.bin", BinPathAnnotationValue(genusBin)),
         Annotation("runtime.genus.env", EnvAnnotationValue(Map(
-          "CADENCE_HOME" -> "/opt/eda_tools/cadence",
-          "CDS_LIC_FILE" -> "/opt/eda_tools/cadence/cadence.lic",
+          "CDS_LIC_FILE" -> licenseFile.toString,
           "OA_UNSUPPORTED_PLAT" -> "linux_rhel50_gcc48x"
         ))),
         Annotation("runtime.genus.hdl_files", HdlsPathAnnotationValue(Seq(workspace / "ChiselStage" / "GCD.v"))),
