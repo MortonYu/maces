@@ -8,7 +8,7 @@ import os._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-abstract class ProcessNode {
+trait ProcessNode {
   var scratchPad: ScratchPad
 
   def input: String

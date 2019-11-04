@@ -17,7 +17,7 @@ object YosysSpec extends MacesTestSuite {
       ))
 
       val scratchPad = ScratchPad(Set(
-        Annotation("user.input.verilogs", VerilogsPathAnnotationValue(Seq(workspace / "ChiselStage" / "GCD.v"))),
+        Annotation("user.input.verilogs", HdlsPathAnnotationValue(Seq(workspace / "ChiselStage" / "GCD.v"))),
         Annotation("user.vendor.liberty_cell_libraries", LibertyCellLibrariesPathAnnotationValue(Seq(resourcesDir / "asap7sc7p5t_24_SIMPLE_RVT_TT.lib"))),
         Annotation("user.input.top", InstanceNameAnnotationValue("GCD")),
         Annotation("user.bin.yosys", BinPathAnnotationValue(Path("/usr/bin/yosys"))),
@@ -27,7 +27,7 @@ object YosysSpec extends MacesTestSuite {
       val runDir = stage.runDir
       val scratchPadOut = stage.scratchPadOut
       val optVerilog = runDir / "GCD_opt.v"
-      assert(scratchPadOut.get("runtime.yosys.opt_verilog").get == VerilogsPathAnnotationValue(Seq(optVerilog)))
+      assert(scratchPadOut.get("runtime.yosys.opt_verilog").get == HdlsPathAnnotationValue(Seq(optVerilog)))
       assert(optVerilog.isFile)
     }
   }
