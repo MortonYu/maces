@@ -46,15 +46,14 @@ case class Library(name: String,
                    voltage: Double = 1.8,
                    temperature: Double = 25,
                    nominalType: String = "tt",
-                   vt: String = "rvt",
                    libertyFile: Option[Path] = None,
                    qrcTechFile: Option[Path] = None,
                    itfFile: Option[Path] = None,
                    lefFile: Option[Path] = None,
                    spiceFile: Option[Path] = None,
                    gdsFile: Option[Path] = None) {
-  vt.foreach(c => require(Set('s', 't', 'f').contains(c)))
-  require(vt.length == 2)
+  nominalType.foreach(c => require(Set('s', 't', 'f').contains(c)))
+  require(nominalType.length == 2)
 }
 
 case class LibrariesAnnotationValue(value: Seq[Library]) extends AnnotationValue

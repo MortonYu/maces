@@ -44,7 +44,7 @@ object GenusSpecSpec extends MacesTestSuite {
           "OA_UNSUPPORTED_PLAT" -> "linux_rhel50_gcc48x"
         ))),
         Annotation("runtime.genus.hdl_files", HdlsPathAnnotationValue(Seq(workspace / "ChiselStage" / "GCD.v"))),
-        Annotation("runtime.genus.lef_files", LefsPathAnnotationValue(???)),
+        Annotation("runtime.genus.tech_lef_files", LefsPathAnnotationValue(???)),
         Annotation("runtime.genus.liberty_cell_files", LibertyCellLibrariesPathAnnotationValue(???)),
         Annotation("runtime.genus.top_name", InstanceNameAnnotationValue("GCD")),
         Annotation("runtime.genus.core_limit", CoreLimitAnnotationValue(1)),
@@ -57,7 +57,8 @@ object GenusSpecSpec extends MacesTestSuite {
         Annotation("runtime.genus.pin_constrain_file", SdcPathAnnotationValue(???)),
         Annotation("runtime.genus.tie0_cell", CellNameAnnotationValue(???)),
         Annotation("runtime.genus.tie1_cell", CellNameAnnotationValue(???)),
-        Annotation("runtime.genus.mmmc_corners", LibrariesAnnotationValue(
+        Annotation("runtime.genus.libraries", LibrariesAnnotationValue(???)),
+        Annotation("runtime.genus.corners", LibrariesAnnotationValue(
           Seq(???)
         ))
       ))

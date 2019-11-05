@@ -36,7 +36,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   def hdls: Seq[String] = scratchPad.get("runtime.genus.hdl_files").get.asInstanceOf[HdlsPathAnnotationValue].paths.map(_.toString)
 
-  def lefs: Seq[String] = scratchPad.get("runtime.genus.lef_files").get.asInstanceOf[LefsPathAnnotationValue].paths.map(_.toString)
+  def lefs: Seq[String] = scratchPad.get("runtime.genus.tech_lef_files").get.asInstanceOf[LefsPathAnnotationValue].paths.map(_.toString)
 
   def topName: String = scratchPad.get("runtime.genus.top_name").get.asInstanceOf[InstanceNameAnnotationValue].value
 
