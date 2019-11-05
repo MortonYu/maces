@@ -32,7 +32,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   override def env: Map[String, String] = scratchPad.get("runtime.genus.env").get.asInstanceOf[EnvAnnotationValue].value
 
-  def bin: Path = scratchPad.get("user.bin.genus").get.asInstanceOf[BinPathAnnotationValue].path
+  def bin: Path = scratchPad.get("runtime.genus.bin").get.asInstanceOf[BinPathAnnotationValue].path
 
   def hdls: Seq[String] = scratchPad.get("runtime.genus.hdl_files").get.asInstanceOf[HdlsPathAnnotationValue].paths.map(_.toString)
 
@@ -62,9 +62,10 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
     def input: String = ""
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      assert(waitUntil(20) { str =>
+      val r = waitUntil(20) { str =>
         str.contains("@genus:root: 1>")
-      }._1)
+      }
+      assert(r._1, r._2)
       (scratchPad, Some(new defaultSettings(scratchPad)))
     }
   }
@@ -77,12 +78,13 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
          |""".stripMargin
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      assert(waitUntil(1) { str =>
+      val r = waitUntil(1) { str =>
         Set(
           str.contains("Setting attribute of root '/': 'hdl_error_on_blackbox' = true"),
-          str.contains("Setting attribute of root '/': 'max_cpus_per_server' = 8")
+          str.contains(s"Setting attribute of root '/': 'max_cpus_per_server' = $coreLimit")
         ).reduce(_ & _)
-      }._1)
+      }
+      assert(r._1, r._2)
       val nextNode = if (autoClockGating) new clockGatingSettings(scratchPad) else new exit(scratchPad)
       (scratchPad, Some(nextNode))
     }
@@ -102,7 +104,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
          |""".stripMargin
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      assert(waitUntil(1) { str =>
+      val r = waitUntil(1) { str =>
         Set(
           str.contains("Setting attribute of root '/': 'lp_clock_gating_infer_enable' = true"),
           str.contains(s"Setting attribute of root '/': 'lp_clock_gating_prefix' = $clockGateCellPrefix"),
@@ -110,7 +112,8 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
           str.contains("Setting attribute of root '/': 'lp_clock_gating_infer_enable' = true"),
           str.contains("Setting attribute of root '/': 'lp_clock_gating_infer_enable' = true")
         ).reduce(_ & _)
-      }._1)
+      }
+      assert(r._1, r._2)
       (scratchPad, Some(new readMMMC(scratchPad)))
     }
   }
@@ -121,9 +124,10 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
       s"\nset_analysis_view -setup { ${corners.min.name}.setup_view } -hold { ${corners.max.name}.hold_view }"
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      assert(waitUntil(20) { str =>
+      val r = waitUntil(20) { str =>
         str.contains("The default library domain is")
-      }._1)
+      }
+      assert(r._1, r._2)
       (scratchPad, Some(new readPhysical(scratchPad)))
     }
   }
@@ -134,9 +138,10 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
     override def should: (ScratchPad, Option[ProcessNode]) = {
       val p = "Library has [0-9]+ usable logic and [0-9]+ usable sequential lib-cells.".r
 
-      assert(waitUntil(20) { str =>
+      val r = waitUntil(20) { str =>
         p.findFirstIn(str).isDefined
-      }._1)
+      }
+      assert(r._1, r._2)
       (scratchPad, Some(new readHdl(scratchPad)))
     }
   }
@@ -149,9 +154,10 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
          |""".stripMargin
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      waitUntil(5) { str =>
+      val r = waitUntil(5) { str =>
         str.contains(s"design:$topName")
       }
+      assert(r._1, r._2)
       (scratchPad, Some(new readHdl(scratchPad)))
     }
   }
@@ -169,13 +175,14 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
          |""".stripMargin
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      assert(waitUntil(1) { str =>
+      val r = waitUntil(1) { str =>
         Set(
           str.contains("Done Elaborating Design"),
           str.contains("Done synthesizing"),
           str.contains("Done mapping")
         ).reduce(_ & _)
-      }._1)
+      }
+      assert(r._1, r._2)
       (scratchPad, Some(new readHdl(scratchPad)))
     }
   }
@@ -199,13 +206,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
          |""".stripMargin
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      assert(waitUntil(1) { str =>
-        Set(
-          str.contains("Done Elaborating Design"),
-          str.contains("Done synthesizing"),
-          str.contains("Done mapping")
-        ).reduce(_ & _)
-      }._1)
+      waitString(5)
       scratchPad = scratchPad add
         Annotation("runtime.genus.syn_verilog", HdlPathAnnotationValue(Path(outputVerilog))) add
         Annotation("runtime.genus.syn_sdc", SdcPathAnnotationValue(Path(outputSdc))) add

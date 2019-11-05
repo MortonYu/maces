@@ -3,10 +3,10 @@ package maces.tests
 import ammonite.ops._
 import maces._
 import maces.annotation._
-import maces.contrib.yosys.YosysStage
+import maces.contrib.cadence.GenusStage
 import utest._
 
-object GenusSpecSpec extends MacesTestSuite {
+object GenusSpec extends MacesTestSuite {
   val tests: Tests = Tests {
     test("genus should synthesis") {
       val workspace = testPath / "workspace"
@@ -36,6 +36,18 @@ object GenusSpecSpec extends MacesTestSuite {
         }
       }
 
+      def pinConstrain: Path = {
+        val f = workspace / "pin.sdc"
+        write(f, "set_load 1.0 [all_outputs]")
+        f
+      }
+
+      def clockConstrain: Path = {
+        val f = workspace / "clock.sdc"
+        write(f, "")
+        f
+      }
+
       val scratchPad = ScratchPad(Set(
         Annotation("runtime.genus.workspace", DirectoryPathAnnotationValue(workspace)),
         Annotation("runtime.genus.bin", BinPathAnnotationValue(genusBin)),
@@ -44,30 +56,49 @@ object GenusSpecSpec extends MacesTestSuite {
           "OA_UNSUPPORTED_PLAT" -> "linux_rhel50_gcc48x"
         ))),
         Annotation("runtime.genus.hdl_files", HdlsPathAnnotationValue(Seq(workspace / "ChiselStage" / "GCD.v"))),
-        Annotation("runtime.genus.tech_lef_files", LefsPathAnnotationValue(???)),
-        Annotation("runtime.genus.liberty_cell_files", LibertyCellLibrariesPathAnnotationValue(???)),
+        Annotation("runtime.genus.tech_lef_files", LefsPathAnnotationValue(Seq(resourcesDir / "asap7" / "asap7_tech_4x_170803.lef"))),
+        Annotation("runtime.genus.libraries", LibrariesAnnotationValue(Seq(
+          Library(name = "asap7_simple_rvt_ss", voltage = 0.63, temperature = 100, nominalType = "ss",
+            libertyFile = Some(resourcesDir / "asap7" / "asap7sc7p5t_24_SIMPLE_RVT_SS.lib"),
+            vsimFile = Some(resourcesDir / "asap7" / "asap7sc7p5t_24_SIMPLE_RVT_SS.v"),
+            qrcTechFile = Some(resourcesDir / "asap7" / "qrcTechFile_typ03_scaled4xV06"),
+            lefFile = Some(resourcesDir / "asap7" / "asap7sc7p5t_24_R_4x_170912.lef"),
+            spiceFile = Some(resourcesDir / "asap7" / "asap7_75t_R.cdl"),
+            gdsFile = Some(resourcesDir / "asap7" / "asap7sc7p5t_24_R.gds")),
+          Library(name = "asap7_simple_rvt_ss", voltage = 0.7, temperature = 25, nominalType = "tt",
+            libertyFile = Some(resourcesDir / "asap7" / "asap7sc7p5t_24_SIMPLE_RVT_TT.lib"),
+            vsimFile = Some(resourcesDir / "asap7" / "asap7sc7p5t_24_SIMPLE_RVT_TT.v"),
+            qrcTechFile = Some(resourcesDir / "asap7" / "qrcTechFile_typ03_scaled4xV06"),
+            lefFile = Some(resourcesDir / "asap7" / "asap7sc7p5t_24_R_4x_170912.lef"),
+            spiceFile = Some(resourcesDir / "asap7" / "asap7_75t_R.cdl"),
+            gdsFile = Some(resourcesDir / "asap7" / "asap7sc7p5t_24_R.gds")),
+          Library(name = "asap7_simple_rvt_ss", voltage = 0.7, temperature = 0, nominalType = "ff",
+            libertyFile = Some(resourcesDir / "asap7" / "asap7sc7p5t_24_SIMPLE_RVT_FF.lib"),
+            vsimFile = Some(resourcesDir / "asap7" / "asap7sc7p5t_24_SIMPLE_RVT_FF.v"),
+            qrcTechFile = Some(resourcesDir / "asap7" / "qrcTechFile_typ03_scaled4xV06"),
+            lefFile = Some(resourcesDir / "asap7" / "asap7sc7p5t_24_R_4x_170912.lef"),
+            spiceFile = Some(resourcesDir / "asap7" / "asap7_75t_R.cdl"),
+            gdsFile = Some(resourcesDir / "asap7" / "asap7sc7p5t_24_R.gds"))
+        ))),
         Annotation("runtime.genus.top_name", InstanceNameAnnotationValue("GCD")),
         Annotation("runtime.genus.core_limit", CoreLimitAnnotationValue(1)),
         Annotation("runtime.genus.auto_clock_gate", AutoClockGatingAnnotationValue(true)),
         Annotation("runtime.genus.clock_gate_cell_prefix", CellNameAnnotationValue("CLKGATE")),
-
-        /** These annotation should be generated from another stage,
-         * however, to break the dependency for test, we directly vendor it  */
-        Annotation("runtime.genus.clock_constrain_file", SdcPathAnnotationValue(???)),
-        Annotation("runtime.genus.pin_constrain_file", SdcPathAnnotationValue(???)),
-        Annotation("runtime.genus.tie0_cell", CellNameAnnotationValue(???)),
-        Annotation("runtime.genus.tie1_cell", CellNameAnnotationValue(???)),
-        Annotation("runtime.genus.libraries", LibrariesAnnotationValue(???)),
-        Annotation("runtime.genus.corners", LibrariesAnnotationValue(
-          Seq(???)
-        ))
+        Annotation("runtime.genus.clock_constrain_file", SdcPathAnnotationValue(pinConstrain)),
+        Annotation("runtime.genus.pin_constrain_file", SdcPathAnnotationValue(clockConstrain)),
+        Annotation("runtime.genus.tie0_cell", CellNameAnnotationValue("TIEHIx1_ASAP7_75t_R")),
+        Annotation("runtime.genus.tie1_cell", CellNameAnnotationValue("TIEHIx1_ASAP7_75t_R")),
+        Annotation("runtime.genus.corners", CornersAnnotationValue(Seq(
+          Corner(name = "PVT_0P63V_100C", timingType = "setup", voltage = 0.63, temperature = 100),
+          Corner(name = "PVT_0P77V_0C", timingType = "hold", voltage = 0.7, temperature = 0)
+        )))
       ))
-      val stage = YosysStage(scratchPad)
+      val stage = GenusStage(scratchPad)
       val runDir = stage.runDir
       val scratchPadOut = stage.scratchPadOut
       val synVerilog = runDir / "GCD_syn.v"
       val synSdf = runDir / "GCD_syn.sdf"
-      val synSdc = runDir / "GCD_sync.sdc"
+      val synSdc = runDir / "GCD_syn.sdc"
       assert(scratchPadOut.get("runtime.genus.syn_verilog").get == HdlPathAnnotationValue(synVerilog))
       assert(scratchPadOut.get("runtime.genus.syn_sdc").get == SdfPathAnnotationValue(synSdf))
       assert(scratchPadOut.get("runtime.genus.syn_sdf").get == SdcPathAnnotationValue(synSdc))
