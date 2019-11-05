@@ -57,7 +57,7 @@ object GenusSpecSpec extends MacesTestSuite {
         Annotation("runtime.genus.pin_constrain_file", SdcPathAnnotationValue(???)),
         Annotation("runtime.genus.tie0_cell", CellNameAnnotationValue(???)),
         Annotation("runtime.genus.tie1_cell", CellNameAnnotationValue(???)),
-        Annotation("runtime.genus.mmmc_corners", CornerValuesAnnotationValue(
+        Annotation("runtime.genus.mmmc_corners", LibrariesAnnotationValue(
           Seq(???)
         ))
       ))

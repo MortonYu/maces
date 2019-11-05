@@ -8,14 +8,23 @@ import os._
 
 case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
-  implicit class CadenceCornerValue(c: CornerValue) {
-    def mmmcString =
+  implicit class CadenceCornerValue(c: Corner) {
+    def matchLibraries(libraries: Seq[Library]): Seq[Library] = libraries.filter(l => l.voltage == c.voltage & l.temperature == c.temperature)
+
+    def qrcFile(libraries: Seq[Library]): Path = {
+      /** only one RC module */
+      val f = libraries.map(_.qrcTechFile).toSet
+      assert(f.size == 1)
+      f.head.get
+    }
+
+    def mmmcString(libraries: Seq[Library]) =
       s"""
-         |create_library_set -name ${c.name}.${c.cornerType}_set -timing [list ${c.lib.toString}]
-         |create_timing_condition -name ${c.name}.${c.cornerType}_cond -library_sets [list ${c.name}.${c.cornerType}_set]
-         |create_rc_corner -name ${c.name}.${c.cornerType}_rc -temperature ${c.temperature} -qrc_tech ${c.qrcTech.toString}
-         |create_delay_corner -name ${c.name}.${c.cornerType}_delay -timing_condition ${c.name}.${c.cornerType}_cond -rc_corner ${c.name}.${c.cornerType}_rc
-         |create_analysis_view -name ${c.name}.${c.cornerType}_view -delay_corner ${c.name}.${c.cornerType}_delay -constraint_mode my_constraint_mode
+         |create_library_set -name ${c.name}.${c.timingType}_set -timing [list ${c.matchLibraries(libraries).map(_.toString).reduce(_ + " " + _)}]
+         |create_timing_condition -name ${c.name}.${c.timingType}_cond -library_sets [list ${c.name}.${c.timingType}_set]
+         |create_rc_corner -name ${c.name}.${c.timingType}_rc -temperature ${c.temperature} -qrc_tech ${qrcFile(libraries).toString}
+         |create_delay_corner -name ${c.name}.${c.timingType}_delay -timing_condition ${c.name}.${c.timingType}_cond -rc_corner ${c.name}.${c.timingType}_rc
+         |create_analysis_view -name ${c.name}.${c.timingType}_view -delay_corner ${c.name}.${c.timingType}_delay -constraint_mode my_constraint_mode
          |""".stripMargin
   }
 
@@ -28,8 +37,6 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
   def hdls: Seq[String] = scratchPad.get("runtime.genus.hdl_files").get.asInstanceOf[HdlsPathAnnotationValue].paths.map(_.toString)
 
   def lefs: Seq[String] = scratchPad.get("runtime.genus.lef_files").get.asInstanceOf[LefsPathAnnotationValue].paths.map(_.toString)
-
-  def libertyLibraries: Seq[String] = scratchPad.get("runtime.genus.liberty_cell_files").get.asInstanceOf[LibertyCellLibrariesPathAnnotationValue].paths.map(_.toString)
 
   def topName: String = scratchPad.get("runtime.genus.top_name").get.asInstanceOf[InstanceNameAnnotationValue].value
 
@@ -47,15 +54,11 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   def tie1Cell: String = scratchPad.get("runtime.genus.tie1_cell").get.asInstanceOf[CellNameAnnotationValue].value
 
-  def corners: Seq[CornerValue] = scratchPad.get("runtime.genus.mmmc_corners").get.asInstanceOf[CornerValuesAnnotationValue].value
+  def libraries: Seq[Library] = scratchPad.get("runtime.genus.libraries").get.asInstanceOf[LibrariesAnnotationValue].value
 
-  def worstCorner: CornerValue = corners.min
+  def corners: Seq[Corner] = scratchPad.get("runtime.genus.corners").get.asInstanceOf[CornersAnnotationValue].value
 
-  def mmmcFile: Path = {
-    val f = workspace / "mmmc.tcl"
-    corners.foreach(c => write(f, c.mmmcString))
-    f
-  }
+  def worstCorner: Corner = corners.min
 
   class waitInit(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String = ""
@@ -116,7 +119,8 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   class readMMMC(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String = s"create_constraint_mode -name my_constraint_mode -sdc_files [list $clockConstrain $pinConstrain]\n" +
-      corners.map(_.mmmcString).reduce(_ + "\n" + _)
+      corners.map(_.mmmcString(libraries)).reduce(_ + "\n" + _) +
+      s"\nset_analysis_view -setup { ${corners.min.name}.setup_view } -hold { ${corners.max.name}.hold_view }"
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
       assert(waitUntil(20) { str =>
@@ -185,12 +189,13 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
     def outputVerilog = workspace / topName + "_syn.v"
 
+    /** here is an implicit setting that worstCorner must be an setup corner */
     def input: String =
       s"""
          |set_db use_tiehilo_for_const duplicate
          |add_tieoffs -high $tie1Cell -low $tie0Cell -max_fanout 1 -verbose
          |write_hdl > $outputVerilog
-         |write_sdc -view ${worstCorner.name}.${worstCorner.cornerType}_view > $outputSdc
+         |write_sdc -view ${worstCorner.name}.setup_view > $outputSdc
          |write_sdf > $outputSdf
          |write_design -innovus -hierarchical -gzip_files $topName
          |""".stripMargin

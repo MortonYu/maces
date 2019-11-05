@@ -42,13 +42,31 @@ case class AutoClockGatingAnnotationValue(value: Boolean) extends AnnotationValu
 
 case class CellNameAnnotationValue(value: String) extends AnnotationValue
 
-case class CornerValue(name: String, cornerType: String, voltage: Double, temperature: Double, lib: Path, qrcTech: Path) extends Ordered[CornerValue] {
-  assert(cornerType == "setup" | cornerType == "hold")
-
-  override def compare(that: CornerValue): Int = (this.voltage, this.temperature) compare(that.voltage, that.temperature)
+case class Library(name: String,
+                   voltage: Double = 1.8,
+                   temperature: Double = 25,
+                   nominalType: String = "tt",
+                   vt: String = "rvt",
+                   libertyFile: Option[Path] = None,
+                   qrcTechFile: Option[Path] = None,
+                   itfFile: Option[Path] = None,
+                   lefFile: Option[Path] = None,
+                   spiceFile: Option[Path] = None,
+                   gdsFile: Option[Path] = None) {
+  vt.foreach(c => require(Set('s', 't', 'f').contains(c)))
+  require(vt.length == 2)
 }
 
-case class CornerValuesAnnotationValue(value: Seq[CornerValue]) extends AnnotationValue
+case class LibrariesAnnotationValue(value: Seq[Library]) extends AnnotationValue
+
+case class Corner(name: String,
+                  timingType: String,
+                  voltage: Double,
+                  temperature: Double) extends Ordered[Library] {
+  override def compare(that: Library): Int = (this.voltage, this.temperature).compare(that.voltage, that.temperature)
+}
+
+case class CornersAnnotationValue(value: Seq[Corner]) extends AnnotationValue
 
 trait HasWorkspace {
   var scratchPad: ScratchPad
