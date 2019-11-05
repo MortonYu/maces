@@ -62,8 +62,8 @@ case class LibrariesAnnotationValue(value: Seq[Library]) extends AnnotationValue
 case class Corner(name: String,
                   timingType: String,
                   voltage: Double,
-                  temperature: Double) extends Ordered[Library] {
-  override def compare(that: Library): Int = (this.voltage, this.temperature).compare(that.voltage, that.temperature)
+                  temperature: Double) extends Ordered[Corner] {
+  override def compare(that: Corner): Int = (this.voltage, this.temperature).compare(that.voltage, that.temperature)
 }
 
 case class CornersAnnotationValue(value: Seq[Corner]) extends AnnotationValue

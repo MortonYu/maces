@@ -47,7 +47,7 @@ object GenusSpecSpec extends MacesTestSuite {
         Annotation("runtime.genus.lef_files", LefsPathAnnotationValue(???)),
         Annotation("runtime.genus.liberty_cell_files", LibertyCellLibrariesPathAnnotationValue(???)),
         Annotation("runtime.genus.top_name", InstanceNameAnnotationValue("GCD")),
-        Annotation("runtime.genus.core_limit", 1),
+        Annotation("runtime.genus.core_limit", CoreLimitAnnotationValue(1)),
         Annotation("runtime.genus.auto_clock_gate", AutoClockGatingAnnotationValue(true)),
         Annotation("runtime.genus.clock_gate_cell_prefix", CellNameAnnotationValue("CLKGATE")),
 

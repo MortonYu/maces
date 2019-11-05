@@ -58,8 +58,6 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   def corners: Seq[Corner] = scratchPad.get("runtime.genus.corners").get.asInstanceOf[CornersAnnotationValue].value
 
-  def worstCorner: Corner = corners.min
-
   class waitInit(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String = ""
 
@@ -195,7 +193,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
          |set_db use_tiehilo_for_const duplicate
          |add_tieoffs -high $tie1Cell -low $tie0Cell -max_fanout 1 -verbose
          |write_hdl > $outputVerilog
-         |write_sdc -view ${worstCorner.name}.setup_view > $outputSdc
+         |write_sdc -view ${corners.min.name}.setup_view > $outputSdc
          |write_sdf > $outputSdf
          |write_design -innovus -hierarchical -gzip_files $topName
          |""".stripMargin
