@@ -20,12 +20,11 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
     def mmmcString(libraries: Seq[Library]) =
       s"""
-         |create_library_set -name ${c.name}.${c.timingType}_set -timing [list ${c.matchLibraries(libraries).map(_.toString).reduce(_ + " " + _)}]
+         |create_library_set -name ${c.name}.${c.timingType}_set -timing [list ${c.matchLibraries(libraries).map(_.libertyFile.get.toString).reduce(_ + " " + _)}]
          |create_timing_condition -name ${c.name}.${c.timingType}_cond -library_sets [list ${c.name}.${c.timingType}_set]
          |create_rc_corner -name ${c.name}.${c.timingType}_rc -temperature ${c.temperature} -qrc_tech ${qrcFile(libraries).toString}
          |create_delay_corner -name ${c.name}.${c.timingType}_delay -timing_condition ${c.name}.${c.timingType}_cond -rc_corner ${c.name}.${c.timingType}_rc
-         |create_analysis_view -name ${c.name}.${c.timingType}_view -delay_corner ${c.name}.${c.timingType}_delay -constraint_mode my_constraint_mode
-         |""".stripMargin
+         |create_analysis_view -name ${c.name}.${c.timingType}_view -delay_corner ${c.name}.${c.timingType}_delay -constraint_mode my_constraint_mode""".stripMargin
   }
 
   override def workspace: Path = scratchPad.get("runtime.genus.workspace").get.asInstanceOf[DirectoryPathAnnotationValue].path
@@ -58,6 +57,8 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   def corners: Seq[Corner] = scratchPad.get("runtime.genus.corners").get.asInstanceOf[CornersAnnotationValue].value
 
+  def debug = true
+
   class waitInit(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String = ""
 
@@ -65,7 +66,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
       val r = waitUntil(20) { str =>
         str.contains("@genus:root: 1>")
       }
-      assert(r._1, r._2)
+      assert(r._1)
       (scratchPad, Some(new defaultSettings(scratchPad)))
     }
   }
@@ -84,7 +85,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
           str.contains(s"Setting attribute of root '/': 'max_cpus_per_server' = $coreLimit")
         ).reduce(_ & _)
       }
-      assert(r._1, r._2)
+      assert(r._1)
       val nextNode = if (autoClockGating) new clockGatingSettings(scratchPad) else new exit(scratchPad)
       (scratchPad, Some(nextNode))
     }
@@ -96,9 +97,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
          |set_db lp_clock_gating_infer_enable true
          |set_db lp_clock_gating_prefix {$clockGateCellPrefix}
          |set_db lp_insert_clock_gating true
-         |# deprecated
          |set_db lp_clock_gating_hierarchical true
-         |# deprecated
          |set_db lp_insert_clock_gating_incremental true
          |set_db lp_clock_gating_register_aware true
          |""".stripMargin
@@ -113,35 +112,33 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
           str.contains("Setting attribute of root '/': 'lp_clock_gating_infer_enable' = true")
         ).reduce(_ & _)
       }
-      assert(r._1, r._2)
+      assert(r._1)
       (scratchPad, Some(new readMMMC(scratchPad)))
     }
   }
 
   class readMMMC(var scratchPad: ScratchPad) extends ProcessNode {
-    def input: String = s"create_constraint_mode -name my_constraint_mode -sdc_files [list $clockConstrain $pinConstrain]\n" +
-      corners.map(_.mmmcString(libraries)).reduce(_ + "\n" + _) +
-      s"\nset_analysis_view -setup { ${corners.min.name}.setup_view } -hold { ${corners.max.name}.hold_view }"
+    def input: String = s"create_constraint_mode -name my_constraint_mode -sdc_files [list $clockConstrain $pinConstrain]" +
+      corners.map(_.mmmcString(libraries)).reduce(_ + _) +
+      s"\nset_analysis_view -setup { ${corners.min.name}.setup_view } -hold { ${corners.max.name}.hold_view }\n"
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
       val r = waitUntil(20) { str =>
         str.contains("The default library domain is")
       }
-      assert(r._1, r._2)
+      assert(r._1)
       (scratchPad, Some(new readPhysical(scratchPad)))
     }
   }
 
   class readPhysical(var scratchPad: ScratchPad) extends ProcessNode {
-    def input: String = s"read_physical -lef { ${lefs.reduce(_ + " " + _)} }"
+    def input: String = s"read_physical -lef { ${(lefs ++ libraries.filter(_.lefFile.nonEmpty).map(_.lefFile.get.toString).distinct).reduce(_ + " " + _)} }\n"
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      val p = "Library has [0-9]+ usable logic and [0-9]+ usable sequential lib-cells.".r
-
       val r = waitUntil(20) { str =>
-        p.findFirstIn(str).isDefined
+        str.contains("usable sequential lib-cells")
       }
-      assert(r._1, r._2)
+      assert(r._1)
       (scratchPad, Some(new readHdl(scratchPad)))
     }
   }
@@ -149,7 +146,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
   class readHdl(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String =
       s"""
-         |read_hdl { ${hdls.reduce(_ + " " + _)}
+         |read_hdl { ${hdls.reduce(_ + " " + _)} }
          |elaborate $topName
          |""".stripMargin
 
@@ -157,8 +154,8 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
       val r = waitUntil(5) { str =>
         str.contains(s"design:$topName")
       }
-      assert(r._1, r._2)
-      (scratchPad, Some(new readHdl(scratchPad)))
+      assert(r._1)
+      (scratchPad, Some(new elaborate(scratchPad)))
     }
   }
 
@@ -175,15 +172,14 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
          |""".stripMargin
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      val r = waitUntil(1) { str =>
+      val r = waitUntil(120) { str =>
         Set(
-          str.contains("Done Elaborating Design"),
           str.contains("Done synthesizing"),
           str.contains("Done mapping")
         ).reduce(_ & _)
       }
-      assert(r._1, r._2)
-      (scratchPad, Some(new readHdl(scratchPad)))
+      assert(r._1)
+      (scratchPad, Some(new writeDesign(scratchPad)))
     }
   }
 
@@ -206,17 +202,19 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
          |""".stripMargin
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      waitString(5)
+      waitUntil(30) { str =>
+        str.contains("Finished exporting design data")
+      }
       scratchPad = scratchPad add
         Annotation("runtime.genus.syn_verilog", HdlPathAnnotationValue(Path(outputVerilog))) add
         Annotation("runtime.genus.syn_sdc", SdcPathAnnotationValue(Path(outputSdc))) add
         Annotation("runtime.genus.syn_sdf", SdfPathAnnotationValue(Path(outputSdf)))
-      (scratchPad, Some(new readHdl(scratchPad)))
+      (scratchPad, Some(new exit(scratchPad)))
     }
   }
 
   class exit(var scratchPad: ScratchPad) extends ProcessNode {
-    def input: String = "exit\n"
+    def input: String = "quit\n"
   }
 
   override val node: ProcessNode = new waitInit(scratchPadIn)

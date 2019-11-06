@@ -32,7 +32,6 @@ trait CliStage extends Phase with HasWorkspace {
       env = env,
       propagateEnv = false
     )
-
     /** invoke a async function to read stdout to [[stdout]] */
     var b: Char = 0
     Future(do {
