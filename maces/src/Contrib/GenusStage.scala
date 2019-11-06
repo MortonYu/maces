@@ -11,6 +11,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
   implicit class CadenceCornerValue(c: Corner) {
     def matchLibraries(libraries: Seq[Library]): Seq[Library] = libraries.filter(l => l.voltage == c.voltage & l.temperature == c.temperature)
 
+
     def qrcFile(libraries: Seq[Library]): Path = {
       /** only one RC module */
       val f = libraries.map(_.qrcTechFile).toSet
@@ -73,8 +74,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   class defaultSettings(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String =
-      s"""
-         |set_db hdl_error_on_blackbox true
+      s"""set_db hdl_error_on_blackbox true
          |set_db max_cpus_per_server $coreLimit
          |""".stripMargin
 
@@ -93,8 +93,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   class clockGatingSettings(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String =
-      s"""
-         |set_db lp_clock_gating_infer_enable true
+      s"""set_db lp_clock_gating_infer_enable true
          |set_db lp_clock_gating_prefix {$clockGateCellPrefix}
          |set_db lp_insert_clock_gating true
          |set_db lp_clock_gating_hierarchical true
@@ -145,8 +144,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   class readHdl(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String =
-      s"""
-         |read_hdl { ${hdls.reduce(_ + " " + _)} }
+      s"""read_hdl { ${hdls.reduce(_ + " " + _)} }
          |elaborate $topName
          |""".stripMargin
 
@@ -161,8 +159,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   class elaborate(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String =
-      s"""
-         |init_design -top $topName
+      s"""init_design -top $topName
          |set_db root: .auto_ungroup none
          |set_units -capacitance 1.0pF
          |set_load_unit -picofarads 1
@@ -184,16 +181,15 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
   }
 
   class writeDesign(var scratchPad: ScratchPad) extends ProcessNode {
-    def outputSdc = workspace / topName + "_syn.sdc"
+    def outputSdc = runDir / "generated" / topName + "_syn.sdc"
 
-    def outputSdf = workspace / topName + "_syn.sdf"
+    def outputSdf = runDir / "generated" / topName + "_syn.sdf"
 
-    def outputVerilog = workspace / topName + "_syn.v"
+    def outputVerilog = runDir / "generated" / topName + "_syn.v"
 
     /** here is an implicit setting that worstCorner must be an setup corner */
     def input: String =
-      s"""
-         |set_db use_tiehilo_for_const duplicate
+      s"""set_db use_tiehilo_for_const duplicate
          |add_tieoffs -high $tie1Cell -low $tie0Cell -max_fanout 1 -verbose
          |write_hdl > $outputVerilog
          |write_sdc -view ${corners.min.name}.setup_view > $outputSdc
@@ -208,7 +204,35 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
       scratchPad = scratchPad add
         Annotation("runtime.genus.syn_verilog", HdlPathAnnotationValue(Path(outputVerilog))) add
         Annotation("runtime.genus.syn_sdc", SdcPathAnnotationValue(Path(outputSdc))) add
-        Annotation("runtime.genus.syn_sdf", SdfPathAnnotationValue(Path(outputSdf)))
+        Annotation("runtime.genus.syn_sdf", SdfPathAnnotationValue(Path(outputSdf))) add
+        Annotation("runtime.genus.stdin", StreamDataAnnotationValue(stdinLogger.toString))
+      (scratchPad, Some(new report(scratchPad)))
+    }
+  }
+
+  class report(var scratchPad: ScratchPad) extends ProcessNode {
+    def input: String =
+      """report_qor
+        |""".stripMargin
+    override def should: (ScratchPad, Option[ProcessNode]) = {
+      val s = waitString(2)
+      val cellAreaPattern = """(?s).*\nCell Area *?([0-9.]+).*""".r
+      val cellAreaPattern(cellArea) = s
+      val netAreaPattern = """(?s).*\nNet Area *?([0-9.]+).*""".r
+      val netAreaPattern(netArea) = s
+      val maxFanoutPattern = """(?s).*\nMax Fanout *?([0-9]+).*""".r
+      val maxFanoutPattern(maxFanout) = s
+      val minFanoutPattern = """(?s).*\nMin Fanout *?([0-9]+).*""".r
+      val minFanoutPattern(minFanout) = s
+      val averageFanoutPattern = """(?s).*\nAverage Fanout *?([0-9.]+).*""".r
+      val averageFanoutPattern(averageFanout) = s
+
+      scratchPad = scratchPad add
+        Annotation("runtime.genus.cell_area", AreaAnnotationValue(cellArea.toDouble)) add
+        Annotation("runtime.genus.net_area", AreaAnnotationValue(netArea.toDouble)) add
+        Annotation("runtime.genus.max_fanout", FanOutAnnotationValue(maxFanout.toDouble)) add
+        Annotation("runtime.genus.min_fanout", FanOutAnnotationValue(minFanout.toDouble)) add
+        Annotation("runtime.genus.average_fanout", FanOutAnnotationValue(averageFanout.toDouble))
       (scratchPad, Some(new exit(scratchPad)))
     }
   }

@@ -38,9 +38,17 @@ case class InstanceNameAnnotationValue(value: String) extends AnnotationValue
 
 case class CoreLimitAnnotationValue(value: Int) extends AnnotationValue
 
+case class AreaAnnotationValue(value: Double) extends AnnotationValue
+
+case class FanOutAnnotationValue(value: Double) extends AnnotationValue
+
+case class PowerAnnotationValue(value: Double) extends AnnotationValue
+
 case class AutoClockGatingAnnotationValue(value: Boolean) extends AnnotationValue
 
 case class CellNameAnnotationValue(value: String) extends AnnotationValue
+
+case class StreamDataAnnotationValue(value: String) extends AnnotationValue
 
 case class Library(name: String,
                    voltage: Double = 1.8,

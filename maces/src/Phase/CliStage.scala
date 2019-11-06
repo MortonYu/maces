@@ -46,6 +46,8 @@ trait CliStage extends Phase with HasWorkspace {
 
   val stdout = new StringBuilder
 
+  val stdinLogger = new StringBuilder
+
   def waitUntil(timeout: Int)(filter: String => Boolean): (Boolean, String) = {
     val startTime = System.currentTimeMillis
     while (System.currentTimeMillis - startTime < timeout * 1000) {
@@ -71,6 +73,7 @@ trait CliStage extends Phase with HasWorkspace {
   }
 
   def runHelper(pn: ProcessNode): Option[ProcessNode] = {
+    stdinLogger.append(pn.input)
     stdin.write(pn.input)
     stdin.flush()
     val scratchPadAndNextPn = pn.should

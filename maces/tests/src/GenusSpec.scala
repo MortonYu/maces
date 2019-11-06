@@ -10,10 +10,12 @@ object GenusSpec extends MacesTestSuite {
   val tests: Tests = Tests {
     test("genus should synthesis") {
       val workspace = testPath / "workspace"
-      rm ! testPath
+
+      val rtlStageRunDir = workspace / "RTLStage" / System.currentTimeMillis.toString
+
       (new chisel3.stage.ChiselStage).run(Seq(
         new chisel3.stage.ChiselGeneratorAnnotation(() => new GCD),
-        new firrtl.TargetDirAnnotation((workspace / "ChiselStage").toString)
+        new firrtl.TargetDirAnnotation(rtlStageRunDir.toString)
       ))
 
       /** the runtime commercial EDA tool installation should be /opt/eda_tools/vendor/tool_name/tool,
@@ -37,13 +39,13 @@ object GenusSpec extends MacesTestSuite {
       }
 
       def pinConstrain: Path = {
-        val f = workspace / "pin.sdc"
+        val f = rtlStageRunDir / "pin.sdc"
         write(f, "set_load 1.0 [all_outputs]")
         f
       }
 
       def clockConstrain: Path = {
-        val f = workspace / "clock.sdc"
+        val f = rtlStageRunDir / "clock.sdc"
         write(f, "")
         f
       }
@@ -57,7 +59,7 @@ object GenusSpec extends MacesTestSuite {
           "COLUMNS" -> "1024",
           "LINES" -> "1024"
         ))),
-        Annotation("runtime.genus.hdl_files", HdlsPathAnnotationValue(Seq(workspace / "ChiselStage" / "GCD.v"))),
+        Annotation("runtime.genus.hdl_files", HdlsPathAnnotationValue(Seq(rtlStageRunDir / "GCD.v"))),
         Annotation("runtime.genus.tech_lef_files", LefsPathAnnotationValue(Seq(resourcesDir / "asap7" / "asap7_tech_4x_170803.lef"))),
         Annotation("runtime.genus.libraries", LibrariesAnnotationValue(Seq(
           Library(name = "asap7_ao_rvt_ss", voltage = 0.63, temperature = 100, nominalType = "ss",
@@ -166,15 +168,28 @@ object GenusSpec extends MacesTestSuite {
       ))
       val stage = GenusStage(scratchPad)
       val scratchPadOut = stage.scratchPadOut
-      val synVerilog = workspace / "GCD_syn.v"
-      val synSdf = workspace / "GCD_syn.sdf"
-      val synSdc = workspace / "GCD_syn.sdc"
+      val runDir = stage.runDir
+      val synVerilog = runDir / "generated" / "GCD_syn.v"
+      val synSdf = runDir / "generated" / "GCD_syn.sdf"
+      val synSdc = runDir / "generated" / "GCD_syn.sdc"
+      val stdinTcl = runDir / "generated" / "syn.tcl"
+      val enter = runDir / "generated" / "enter.sh"
       assert(scratchPadOut.get("runtime.genus.syn_verilog").get == HdlPathAnnotationValue(synVerilog))
       assert(scratchPadOut.get("runtime.genus.syn_sdc").get == SdcPathAnnotationValue(synSdc))
       assert(scratchPadOut.get("runtime.genus.syn_sdf").get == SdfPathAnnotationValue(synSdf))
+      write(stdinTcl, scratchPadOut.get("runtime.genus.stdin").get.asInstanceOf[StreamDataAnnotationValue].value)
+      val enterString = "#!/bin/bash\n" + scratchPadOut.get("runtime.genus.env").get.asInstanceOf[EnvAnnotationValue].value.map(m => s"${m._1}=${m._2}\n").reduce(_ + _) + genusBin.toString
+      write(enter, enterString)
       assert(synVerilog.isFile)
       assert(synSdc.isFile)
       assert(synSdf.isFile)
+      assert(stdinTcl.isFile)
+      /** result of GENUS171*/
+      assert(scratchPadOut.get("runtime.genus.cell_area").get.asInstanceOf[AreaAnnotationValue].value == 905.826)
+      assert(scratchPadOut.get("runtime.genus.net_area").get.asInstanceOf[AreaAnnotationValue].value == 382.791)
+      assert(scratchPadOut.get("runtime.genus.max_fanout").get.asInstanceOf[FanOutAnnotationValue].value == 67.0)
+      assert(scratchPadOut.get("runtime.genus.min_fanout").get.asInstanceOf[FanOutAnnotationValue].value == 1.0)
+      assert(scratchPadOut.get("runtime.genus.average_fanout").get.asInstanceOf[FanOutAnnotationValue].value == 2.1)
     }
   }
 }
