@@ -22,6 +22,8 @@ case class SdcPathAnnotationValue(path: Path) extends PathAnnotationValue
 
 case class SdfPathAnnotationValue(path: Path) extends PathAnnotationValue
 
+case class TclPathAnnotationValue(path: Path) extends PathAnnotationValue
+
 case class LefPathAnnotationValue(path: Path) extends PathAnnotationValue
 
 case class HdlsPathAnnotationValue(paths: Seq[Path]) extends PathsAnnotationValue

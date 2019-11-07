@@ -181,11 +181,17 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
   }
 
   class writeDesign(var scratchPad: ScratchPad) extends ProcessNode {
-    def outputSdc = runDir / "generated" / topName + "_syn.sdc"
+    def outputSdc: Path = runDir / "generated" / (topName + "_syn.sdc")
 
-    def outputSdf = runDir / "generated" / topName + "_syn.sdf"
+    def outputSdf: Path = runDir / "generated" / (topName + "_syn.sdf")
 
-    def outputVerilog = runDir / "generated" / topName + "_syn.v"
+    def outputVerilog: Path = runDir / "generated" / (topName + "_syn.v")
+
+    def outputMmmcTcl: Path = {
+      val p: Path = runDir / "generated" / (topName + "_mmmc.tcl")
+      os.copy(runDir / "genus_invs_des" / "genus.mmmc.tcl", p)
+      p
+    }
 
     /** here is an implicit setting that worstCorner must be an setup corner */
     def input: String =
@@ -202,9 +208,10 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
         str.contains("Finished exporting design data")
       }
       scratchPad = scratchPad add
-        Annotation("runtime.genus.syn_verilog", HdlPathAnnotationValue(Path(outputVerilog))) add
-        Annotation("runtime.genus.syn_sdc", SdcPathAnnotationValue(Path(outputSdc))) add
-        Annotation("runtime.genus.syn_sdf", SdfPathAnnotationValue(Path(outputSdf))) add
+        Annotation("runtime.genus.syn_verilog", HdlPathAnnotationValue(outputVerilog)) add
+        Annotation("runtime.genus.syn_sdc", SdcPathAnnotationValue(outputSdc)) add
+        Annotation("runtime.genus.syn_sdf", SdfPathAnnotationValue(outputSdf)) add
+        Annotation("runtime.genus.mmmc_tcl", TclPathAnnotationValue(outputMmmcTcl)) add
         Annotation("runtime.genus.stdin", StreamDataAnnotationValue(stdinLogger.toString))
       (scratchPad, Some(new report(scratchPad)))
     }
@@ -214,6 +221,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
     def input: String =
       """report_qor
         |""".stripMargin
+
     override def should: (ScratchPad, Option[ProcessNode]) = {
       val s = waitString(2)
       val cellAreaPattern = """(?s).*\nCell Area *?([0-9.]+).*""".r
