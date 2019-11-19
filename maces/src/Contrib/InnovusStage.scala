@@ -18,8 +18,7 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
     }
 
     def mmmcString(libraries: Seq[Library]) =
-      s"""
-         |create_library_set -name ${c.name}.${c.timingType}_set -timing [list ${c.matchLibraries(libraries).map(_.libertyFile.get.toString).reduce(_ + " " + _)}]
+      s"""create_library_set -name ${c.name}.${c.timingType}_set -timing [list ${c.matchLibraries(libraries).map(_.libertyFile.get.toString).reduce(_ + " " + _)}]
          |create_timing_condition -name ${c.name}.${c.timingType}_cond -library_sets [list ${c.name}.${c.timingType}_set]
          |create_rc_corner -name ${c.name}.${c.timingType}_rc -temperature ${c.temperature} -qrc_tech ${qrcFile(libraries).toString}
          |create_delay_corner -name ${c.name}.${c.timingType}_delay -timing_condition ${c.name}.${c.timingType}_cond -rc_corner ${c.name}.${c.timingType}_rc
@@ -85,7 +84,7 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   def lefs: Seq[String] = scratchPad.get("runtime.innovus.tech_lef_files").get.asInstanceOf[LefsPathAnnotationValue].paths.map(_.toString)
 
-  def hierarchicalMode: String = scratchPad.get("runtime.innovus.tech_lef_files").get.asInstanceOf[HierarchicalModeValue].value
+  def hierarchicalMode: String = scratchPad.get("runtime.innovus.hierarchical_mode").get.asInstanceOf[HierarchicalModeAnnotationValue].value
 
   def ilms: Seq[Ilm] = scratchPad.get("runtime.innovus.ilms").get.asInstanceOf[IlmsAnnotationValue].value
 
@@ -99,8 +98,6 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
   }
 
   def powerSpecMode: String = scratchPad.get("runtime.innovus.power_spec_mode").get.asInstanceOf[PowerSpecModeAnnotationValue].value
-
-  def powerSpecType: String = scratchPad.get("runtime.innovus.power_spec_type").get.asInstanceOf[PowerSpecTypeAnnotationValue].value
 
   def supplies: Seq[Supply] = scratchPad.get("runtime.innovus.supplies").get.asInstanceOf[SuppliesAnnotationValue].value
 
@@ -116,19 +113,9 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   def clockGateCellPrefix: String = scratchPad.get("runtime.innovus.clock_gate_cell_prefix").get.asInstanceOf[CellNameAnnotationValue].value
 
-  def clockConstrain: String = scratchPad.get("runtime.innovus.clock_constrain_file").get.asInstanceOf[SdcPathAnnotationValue].path.toString
-
-  def pinConstrain: String = scratchPad.get("runtime.innovus.pin_constrain_file").get.asInstanceOf[SdcPathAnnotationValue].path.toString
-
-  def tie0Cell: String = scratchPad.get("runtime.innovus.tie0_cell").get.asInstanceOf[CellNameAnnotationValue].value
-
-  def tie1Cell: String = scratchPad.get("runtime.innovus.tie1_cell").get.asInstanceOf[CellNameAnnotationValue].value
-
   def mmmcTcl: String = scratchPad.get("runtime.innovus.mmmc_tcl").get.asInstanceOf[TclPathAnnotationValue].path.toString
 
   def libraries: Seq[Library] = scratchPad.get("runtime.innovus.libraries").get.asInstanceOf[LibrariesAnnotationValue].value
-
-  def corners: Seq[Corner] = scratchPad.get("runtime.innovus.corners").get.asInstanceOf[CornersAnnotationValue].value
 
   def debug = true
 
@@ -198,7 +185,7 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
       println(waitString(5))
-      val nextStage = if (powerSpecMode == "empty") new powerSpec()(scratchPad) else new initDesign(scratchPad)
+      val nextStage = if (powerSpecMode == "empty") new powerSpec(scratchPad) else new initDesign(scratchPad)
       (scratchPad, Some(nextStage))
     }
   }

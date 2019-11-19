@@ -89,7 +89,7 @@ case class Library(name: String,
   require(nominalType.length == 2)
 }
 
-case class HierarchicalModeValue(value: String) extends AnnotationValue {
+case class HierarchicalModeAnnotationValue(value: String) extends AnnotationValue {
   require(Set("flat", "leaf", "hierarchical", "top").contains(value))
 }
 
