@@ -60,6 +60,8 @@ case class WireNameAnnotationValue(value: String) extends AnnotationValue
 
 case class TimeUnitAnnotationValue(value: String) extends AnnotationValue
 
+case class SiteNameAnnotationValue(value: String) extends AnnotationValue
+
 case class PowerSpecModeAnnotationValue(value: String) extends AnnotationValue {
   require(Set("auto", "manual", "empty").contains(value))
 }
@@ -172,10 +174,10 @@ case class PlacementConstraint(path: String,
                                master: Option[String] = None,
                                createPhysical: Boolean = false,
                                orientation: String = "r0",
-                               margins: Option[Margins],
-                               topLayer: Option[String],
-                               layers: Option[Seq[String]],
-                               obstructionTypes: Option[Seq[String]])
+                               margins: Option[Margins] = Some(Margins(0, 0, 0, 0)),
+                               topLayer: Option[String] = None,
+                               layers: Option[Seq[String]] = None,
+                               obstructionTypes: Option[Seq[String]] = None)
 
 case class PlacementConstraintsAnnotationValue(values: Seq[PlacementConstraint]) extends AnnotationValue
 

@@ -80,7 +80,7 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   def timeUnit: String = scratchPad.get("runtime.innovus.time_unit").get.asInstanceOf[TimeUnitAnnotationValue].value
 
-  def site: String = ???
+  def site: String = scratchPad.get("runtime.innovus.site").get.asInstanceOf[SiteNameAnnotationValue].value
 
   def lefs: Seq[String] = scratchPad.get("runtime.innovus.tech_lef_files").get.asInstanceOf[LefsPathAnnotationValue].paths.map(_.toString)
 
