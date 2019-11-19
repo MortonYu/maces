@@ -17,15 +17,14 @@ object InnovusSpec extends MacesTestSuite {
       lazy val genusStageDir: Path = {
         val d = workspace / "GenusStage" / System.currentTimeMillis.toString
         os.makeDir.all(d)
-        os.list(resourcesDir / "genus_out").foreach(f => {
-          os.copy(f, d)
+        os.walk(resourcesDir / "genus_out").foreach(f => {
+          os.copy.into(f, d)
         })
-        os.list(d).foreach {
-          f => %%("sed", "-i", s"s:\$RESOURCESDIR\$:${resourcesDir.toString}:g", f.toString)(Path("/tmp"))
+        os.walk(d).foreach { f =>
+          os.proc("sed", "-i", s"s:RESOURCESDIR:${resourcesDir.toString}:g", f).call()
         }
         d
       }
-
 
       val netlists: Seq[Path] = Seq(genusStageDir / "GDC_syn.v")
 
