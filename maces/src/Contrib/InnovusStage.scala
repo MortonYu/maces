@@ -197,17 +197,7 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
         str.contains("Netlist is unique.")
       }
       assert(r._1)
-      val nextStage = if (nonLeaf) new readIlm(scratchPad) else new powerSpec(scratchPad)
-      (scratchPad, Some(nextStage))
-    }
-  }
-
-  class readIlm(var scratchPad: ScratchPad) extends ProcessNode {
-    def input: String = ilms.map(_.read).reduce(_ + _)
-
-    override def should: (ScratchPad, Option[ProcessNode]) = {
-      println(waitString(5))
-      val nextStage = if (powerSpecMode == "empty") new powerSpec(scratchPad) else new initDesign(scratchPad)
+      val nextStage = new powerSpec(scratchPad)
       (scratchPad, Some(nextStage))
     }
   }
@@ -236,10 +226,14 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
          |set_db design_flow_effort $designEffort
          |""".stripMargin
 
+    def expressRoute: String = if (designEffort == "express") s"set setDesignmode design_express_route true\n" else ""
+
+
     override def should: (ScratchPad, Option[ProcessNode]) = {
       val r = waitUntil(20) { str =>
-        str.contains("1 express")
+        str.contains(s"1 $designEffort")
       }
+      print(r._2)
       assert(r._1)
 
       (scratchPad, Some(new floorplan(scratchPad)))
@@ -261,13 +255,14 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   class route(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String =
-      s"""route_design
+      s"""place_opt_design
+         |route_design
          |opt_design -post_route -setup -hold
          |set_db write_stream_virtual_connection false
          |""".stripMargin
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      println(waitString(60))
+      println(waitString(30))
       assert(false)
       (scratchPad, Some(new initDesign(scratchPad)))
     }

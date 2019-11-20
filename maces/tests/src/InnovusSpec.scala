@@ -86,12 +86,12 @@ object InnovusSpec extends MacesTestSuite {
             placementType = "toplevel",
             x = 0,
             y = 0,
-            width = 10,
-            height = 10
+            width = 35,
+            height = 35
           )
         ))),
         Annotation("runtime.innovus.power_spec_mode", PowerSpecModeAnnotationValue("empty")),
-        Annotation("runtime.innovus.designEffort", DesignEffortAnnotationValue("express")),
+        Annotation("runtime.innovus.designEffort", DesignEffortAnnotationValue("standard")),
         Annotation("runtime.innovus.dont_use", CellsNameAnnotationValue(Nil)),
         Annotation("runtime.innovus.auto_clock_gate", AutoClockGatingAnnotationValue(false)),
         Annotation("runtime.innovus.clock_gate_cell_prefix", CellNameAnnotationValue("CLKGATE_")),
