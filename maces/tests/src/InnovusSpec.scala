@@ -26,7 +26,7 @@ object InnovusSpec extends MacesTestSuite {
         d
       }
 
-      val netlists: Seq[Path] = Seq(genusStageDir / "GDC_syn.v")
+      val netlists: Seq[Path] = Seq(genusStageDir / "GCD_syn.v")
 
       val mmmc: Path = genusStageDir / "GCD_mmmc.tcl"
 
@@ -95,7 +95,7 @@ object InnovusSpec extends MacesTestSuite {
         Annotation("runtime.innovus.dont_use", CellsNameAnnotationValue(Nil)),
         Annotation("runtime.innovus.auto_clock_gate", AutoClockGatingAnnotationValue(false)),
         Annotation("runtime.innovus.clock_gate_cell_prefix", CellNameAnnotationValue("CLKGATE_")),
-        Annotation("runtime.innovus.site", SiteNameAnnotationValue("CoreSite")),
+        Annotation("runtime.innovus.site", SiteNameAnnotationValue("coreSite")),
         Annotation("runtime.innovus.mmmc_tcl", TclPathAnnotationValue(mmmc)),
         Annotation("runtime.innovus.libraries", LibrariesAnnotationValue(asap7Libraries))
       ))

@@ -37,7 +37,7 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
            |place_inst ${f.path} ${f.x} ${f.y} ${f.orientation} -fixed
            |""".stripMargin
       else f.placementType match {
-        case "toplevel" => s"create_floorplan -core_margins_by die -flip f -die_size_by_io_height max $site -die_size { ${f.width} ${f.height} ${f.margins.get.left} ${f.margins.get.bottom} ${f.margins.get.right} ${f.margins.get.top} }"
+        case "toplevel" => s"create_floorplan -core_margins_by die -flip f -die_size_by_io_height max -site $site -die_size { ${f.width} ${f.height} ${f.margins.get.left} ${f.margins.get.bottom} ${f.margins.get.right} ${f.margins.get.top} }"
 
         /** what is createPhysical */
         case "placement" => s"create_guide -name ${f.path} -area ${f.x} ${f.y} ${f.x + f.width} ${f.y + f.height}"
@@ -123,25 +123,34 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
     def input: String = ""
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      val r = waitUntil(20) { str =>
-        str.contains("@innovus:root: 1>")
+      val r = waitUntil(100) { str =>
+        str.contains("@innovus 1>")
       }
       assert(r._1)
+
       (scratchPad, Some(new defaultSettings(scratchPad)))
     }
   }
 
   class defaultSettings(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String =
-      s"""set_db design_process_node $processNode
-         |set_multi_cpu_usage -local_cpu $coreLimit
+      s"""set_multi_cpu_usage -local_cpu $coreLimit
+         |set_library_unit -time 1$timeUnit
+         |set_db design_process_node $processNode
          |set_db timing_analysis_cppr both
          |set_db timing_analysis_type ocv
-         |set_library_unit -time 1$timeUnit
          |""".stripMargin
 
+
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      println(waitString(5))
+      val r = waitUntil(100) { str =>
+        Set(
+          str.contains("1 28"),
+          str.contains("1 both"),
+          str.contains("1 ocv")
+        ).reduce(_ & _)
+      }
+      assert(r._1)
       (scratchPad, Some(new readPhysical(scratchPad)))
     }
   }
@@ -152,17 +161,28 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
     def input: String = s"read_physical -lef { ${lefFiles.reduce(_ + " " + _)} }\n"
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      println(waitString(5))
+      val r = waitUntil(20) { str =>
+        Set(
+          str.contains("viaInitial starts at"),
+          str.contains("viaInitial ends")
+        ).reduce(_ & _)
+      }
+      assert(r._1)
       (scratchPad, Some(new readMMMC(scratchPad)))
     }
   }
 
   class readMMMC(var scratchPad: ScratchPad) extends ProcessNode {
     /** currently we should already mmmc.tcl generated from genus. */
-    def input: String = s"read_mmmc $mmmcTcl"
+    def input: String =
+      s"""read_mmmc $mmmcTcl
+         |""".stripMargin
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      println(waitString(5))
+      val r = waitUntil(20) { str =>
+        str.contains("timing_initialized")
+      }
+      assert(r._1)
       (scratchPad, Some(new readNetlist(scratchPad)))
     }
   }
@@ -170,11 +190,13 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
   class readNetlist(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String =
       s"""read_netlist { ${netlists.reduce(_ + " " + _)} } -top $topName
-         |${ilms.map(_.read)}
          |""".stripMargin
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      println(waitString(5))
+      val r = waitUntil(20) { str =>
+        str.contains("Netlist is unique.")
+      }
+      assert(r._1)
       val nextStage = if (nonLeaf) new readIlm(scratchPad) else new powerSpec(scratchPad)
       (scratchPad, Some(nextStage))
     }
@@ -197,7 +219,13 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
          |""".stripMargin
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      println(waitString(5))
+      val r = waitUntil(20) { str =>
+        Set(
+          str.contains("1  VDD"),
+          str.contains("1  VDD")
+        ).reduce(_ & _)
+      }
+      assert(r._1)
       (scratchPad, Some(new initDesign(scratchPad)))
     }
   }
@@ -205,19 +233,28 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
   class initDesign(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String =
       s"""init_design
-         |set_db design_flow_effort $designEffort""".stripMargin
+         |set_db design_flow_effort $designEffort
+         |""".stripMargin
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      println(waitString(5))
+      val r = waitUntil(20) { str =>
+        str.contains("1 express")
+      }
+      assert(r._1)
+
       (scratchPad, Some(new floorplan(scratchPad)))
     }
   }
 
   class floorplan(var scratchPad: ScratchPad) extends ProcessNode {
-    def input: String = floorplans.map(_.floorplanString).reduce(_ + "\n" + _)
+    def input: String = floorplans.map(_.floorplanString).reduce(_ + "\n" + _) + "\n"
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      println(waitString(5))
+      val r = waitUntil(20) { str =>
+        str.contains("Adjusting die size togrid")
+      }
+      assert(r._1)
+
       (scratchPad, Some(new route(scratchPad)))
     }
   }
@@ -230,7 +267,8 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
          |""".stripMargin
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      println(waitString(5))
+      println(waitString(60))
+      assert(false)
       (scratchPad, Some(new initDesign(scratchPad)))
     }
   }
@@ -243,7 +281,7 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
 
 
   def command: Seq[String] = {
-    Seq(bin.toString)
+    Seq(bin.toString, "-nowin", "-common_ui")
   }
 }
 
