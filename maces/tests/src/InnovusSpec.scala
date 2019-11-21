@@ -59,6 +59,8 @@ object InnovusSpec extends MacesTestSuite {
       }
 
       val scratchPad = ScratchPad(Set(
+        Annotation("runtime.innovus.stdin_shell", GeneratedFileAnnotationValue("par.tcl")),
+        Annotation("runtime.innovus.enter_shell", GeneratedFileAnnotationValue("enter.sh")),
         Annotation("runtime.innovus.workspace", DirectoryPathAnnotationValue(workspace)),
         Annotation("runtime.innovus.env", EnvAnnotationValue(Map(
           "CADENCE_HOME" -> cadenceHome.toString,

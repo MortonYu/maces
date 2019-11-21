@@ -64,6 +64,10 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   override def env: Map[String, String] = scratchPad.get("runtime.innovus.env").get.asInstanceOf[EnvAnnotationValue].value
 
+  def stdinTclPath: Path = Path(scratchPad.get("runtime.innovus.stdin_shell").get.asInstanceOf[GeneratedFileAnnotationValue].path, generatedPath)
+
+  def enterPath: Path = Path(scratchPad.get("runtime.innovus.enter_shell").get.asInstanceOf[GeneratedFileAnnotationValue].path, generatedPath)
+
   def coreLimit: Int = scratchPad.get("runtime.innovus.core_limit").get.asInstanceOf[CoreLimitAnnotationValue].value
 
   def processNode: Int = scratchPad.get("runtime.innovus.process_node").get.asInstanceOf[ProcessNodeAnnotationValue].value
@@ -276,18 +280,6 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
         str.contains("Finished opt_design")
       }
       assert(r._1)
-      (scratchPad, Some(new report(scratchPad)))
-    }
-  }
-
-  class report(var scratchPad: ScratchPad) extends ProcessNode {
-    def input: String =
-      """report_qor
-        |""".stripMargin
-
-    override def should: (ScratchPad, Option[ProcessNode]) = {
-      val s = waitString(5)
-      print(s)
       (scratchPad, Some(new save(scratchPad)))
     }
   }
@@ -295,8 +287,9 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
   class save(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String =
       s"""set_db write_stream_virtual_connection false
-         |write_db $topName
-         |quit
+         |report_qor -format json -file ${(generatedPath / "qor.json").toString}
+         |write_db ${(generatedPath / (topName + "_database")).toString}
+         |exit
          |""".stripMargin
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
@@ -304,6 +297,8 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
         str.contains("End write_db save design")
       }
       assert(r._1)
+      write(stdinTclPath, stdinLogger.toString)
+      write(enterPath, "#!/bin/bash\n" + env.map(m => s"export ${m._1}=${m._2}\n").reduce(_ + _) + bin.toString, perms = PermSet.fromInt(0x700))
       (scratchPad, None)
     }
   }

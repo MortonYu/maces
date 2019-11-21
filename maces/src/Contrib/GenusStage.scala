@@ -34,9 +34,9 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   def bin: Path = scratchPad.get("runtime.genus.bin").get.asInstanceOf[BinPathAnnotationValue].path
 
-  def stdinTclPath: Path = Path(scratchPad.get("runtime.genus.stdin_shell").get.asInstanceOf[GeneratedFileAnnotationValue].path, runDir / "generated")
+  def stdinTclPath: Path = Path(scratchPad.get("runtime.genus.stdin_shell").get.asInstanceOf[GeneratedFileAnnotationValue].path, generatedPath)
 
-  def enterPath: Path = Path(scratchPad.get("runtime.genus.enter_shell").get.asInstanceOf[GeneratedFileAnnotationValue].path, runDir / "generated")
+  def enterPath: Path = Path(scratchPad.get("runtime.genus.enter_shell").get.asInstanceOf[GeneratedFileAnnotationValue].path, generatedPath)
 
   def hdls: Seq[String] = scratchPad.get("runtime.genus.hdl_files").get.asInstanceOf[HdlsPathAnnotationValue].paths.map(_.toString)
 
@@ -185,14 +185,14 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
   }
 
   class writeDesign(var scratchPad: ScratchPad) extends ProcessNode {
-    def outputSdc: Path = runDir / "generated" / (topName + "_syn.sdc")
+    def outputSdc: Path = generatedPath / (topName + "_syn.sdc")
 
-    def outputSdf: Path = runDir / "generated" / (topName + "_syn.sdf")
+    def outputSdf: Path = generatedPath / (topName + "_syn.sdf")
 
-    def outputVerilog: Path = runDir / "generated" / (topName + "_syn.v")
+    def outputVerilog: Path = generatedPath / (topName + "_syn.v")
 
     def outputMmmcTcl: Path = {
-      val p: Path = runDir / "generated" / (topName + "_mmmc.tcl")
+      val p: Path = generatedPath / (topName + "_mmmc.tcl")
       os.copy(runDir / "genus_invs_des" / "genus.mmmc.tcl", p)
       p
     }
@@ -253,7 +253,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
     def input: String = "quit\n"
 
     write(stdinTclPath, stdinLogger.toString)
-    write(enterPath, "#!/bin/bash\n" + env.map(m => s"export ${m._1}=${m._2}\n").reduce(_ + _) + bin.toString)
+    write(enterPath, "#!/bin/bash\n" + env.map(m => s"export ${m._1}=${m._2}\n").reduce(_ + _) + bin.toString, perms = PermSet.fromInt(0x700))
   }
 
   override val node: ProcessNode = new waitInit(scratchPadIn)

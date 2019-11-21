@@ -25,6 +25,12 @@ trait CliStage extends Phase with HasWorkspace {
 
   def command: Seq[String]
 
+  lazy val generatedPath: Path = {
+    val p = runDir / "generated"
+    makeDir.all(p)
+    p
+  }
+
   /** TODO: still have system env, seems to be a bug? */
   val sub: SubProcess = {
     val process = os.proc(command).spawn(
