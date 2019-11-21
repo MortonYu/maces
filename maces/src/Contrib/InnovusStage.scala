@@ -298,7 +298,7 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
       }
       assert(r._1)
       write(stdinTclPath, stdinLogger.toString)
-      write(enterPath, "#!/bin/bash\n" + env.map(m => s"export ${m._1}=${m._2}\n").reduce(_ + _) + bin.toString, perms = PermSet.fromInt(0x700))
+      write(enterPath, "#!/bin/bash\n" + env.map(m => s"export ${m._1}=${m._2}\n").reduce(_ + _) + command.reduce(_+" "+_), perms = "r-x------"))
       (scratchPad, None)
     }
   }

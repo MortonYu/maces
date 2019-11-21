@@ -253,7 +253,7 @@ case class GenusStage(scratchPadIn: ScratchPad) extends CliStage {
     def input: String = "quit\n"
 
     write(stdinTclPath, stdinLogger.toString)
-    write(enterPath, "#!/bin/bash\n" + env.map(m => s"export ${m._1}=${m._2}\n").reduce(_ + _) + bin.toString, perms = PermSet.fromInt(0x700))
+    write(enterPath, "#!/bin/bash\n" + env.map(m => s"export ${m._1}=${m._2}\n").reduce(_ + _) + command.reduce(_+" "+_), perms = "r-x------")
   }
 
   override val node: ProcessNode = new waitInit(scratchPadIn)
