@@ -233,7 +233,6 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
       val r = waitUntil(20) { str =>
         str.contains(s"1 $designEffort")
       }
-      print(r._2)
       assert(r._1)
 
       (scratchPad, Some(new floorplan(scratchPad)))
@@ -241,11 +240,11 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
   }
 
   class floorplan(var scratchPad: ScratchPad) extends ProcessNode {
-    def input: String = floorplans.map(_.floorplanString).reduce(_ + "\n" + _) + "\n"
+    def input: String = floorplans.map(_.floorplanString).reduce(_ + "\n" + _) + "\nplace_opt_design\n"
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      val r = waitUntil(20) { str =>
-        str.contains("Adjusting die size togrid")
+      val r = waitUntil(120) { str =>
+        str.contains("Finished GigaPlace")
       }
       assert(r._1)
 
@@ -255,28 +254,63 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
 
   class route(var scratchPad: ScratchPad) extends ProcessNode {
     def input: String =
-      s"""place_opt_design
-         |route_design
-         |opt_design -post_route -setup -hold
-         |set_db write_stream_virtual_connection false
+      s"""route_design
          |""".stripMargin
 
     override def should: (ScratchPad, Option[ProcessNode]) = {
-      println(waitString(30))
-      assert(false)
-      (scratchPad, Some(new initDesign(scratchPad)))
+      val r = waitUntil(120) { str =>
+        str.contains("End route_design")
+      }
+      assert(r._1)
+      (scratchPad, Some(new finalOpt(scratchPad)))
     }
   }
 
-  class exit(var scratchPad: ScratchPad) extends ProcessNode {
-    def input: String = "quit\n"
+  class finalOpt(var scratchPad: ScratchPad) extends ProcessNode {
+    def input: String =
+      s"""opt_design -post_route -setup -hold
+         |""".stripMargin
+
+    override def should: (ScratchPad, Option[ProcessNode]) = {
+      val r = waitUntil(120) { str =>
+        str.contains("Finished opt_design")
+      }
+      assert(r._1)
+      (scratchPad, Some(new report(scratchPad)))
+    }
+  }
+
+  class report(var scratchPad: ScratchPad) extends ProcessNode {
+    def input: String =
+      """report_qor
+        |""".stripMargin
+
+    override def should: (ScratchPad, Option[ProcessNode]) = {
+      val s = waitString(5)
+      print(s)
+      (scratchPad, Some(new save(scratchPad)))
+    }
+  }
+
+  class save(var scratchPad: ScratchPad) extends ProcessNode {
+    def input: String =
+      s"""set_db write_stream_virtual_connection false
+         |write_db $topName
+         |quit
+         |""".stripMargin
+
+    override def should: (ScratchPad, Option[ProcessNode]) = {
+      val r = waitUntil(30) { str =>
+        str.contains("End write_db save design")
+      }
+      assert(r._1)
+      (scratchPad, None)
+    }
   }
 
   override val node: ProcessNode = new waitInit(scratchPadIn)
-
 
   def command: Seq[String] = {
     Seq(bin.toString, "-nowin", "-common_ui")
   }
 }
-

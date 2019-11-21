@@ -26,6 +26,8 @@ case class TclPathAnnotationValue(path: Path) extends PathAnnotationValue
 
 case class LefPathAnnotationValue(path: Path) extends PathAnnotationValue
 
+case class GeneratedFileAnnotationValue(path: RelPath) extends RelPathAnnotationValue
+
 case class HdlsPathAnnotationValue(paths: Seq[Path]) extends PathsAnnotationValue
 
 case class SdcsPathAnnotationValue(paths: Seq[Path]) extends PathsAnnotationValue

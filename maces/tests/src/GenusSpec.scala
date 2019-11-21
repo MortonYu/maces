@@ -51,6 +51,8 @@ object GenusSpec extends MacesTestSuite {
       }
 
       val scratchPad = ScratchPad(Set(
+        Annotation("runtime.genus.stdin_shell", GeneratedFileAnnotationValue("syn.tcl")),
+        Annotation("runtime.genus.enter_shell", GeneratedFileAnnotationValue("enter.sh")),
         Annotation("runtime.genus.workspace", DirectoryPathAnnotationValue(workspace)),
         Annotation("runtime.genus.bin", BinPathAnnotationValue(genusBin)),
         Annotation("runtime.genus.env", EnvAnnotationValue(Map(
@@ -86,12 +88,10 @@ object GenusSpec extends MacesTestSuite {
       assert(scratchPadOut.get("runtime.genus.syn_verilog").get == HdlPathAnnotationValue(synVerilog))
       assert(scratchPadOut.get("runtime.genus.syn_sdc").get == SdcPathAnnotationValue(synSdc))
       assert(scratchPadOut.get("runtime.genus.syn_sdf").get == SdfPathAnnotationValue(synSdf))
-      write(stdinTcl, scratchPadOut.get("runtime.genus.stdin").get.asInstanceOf[StreamDataAnnotationValue].value)
-      val enterString = "#!/bin/bash\n" + scratchPadOut.get("runtime.genus.env").get.asInstanceOf[EnvAnnotationValue].value.map(m => s"${m._1}=${m._2}\n").reduce(_ + _) + genusBin.toString
-      write(enter, enterString)
       assert(synVerilog.isFile)
       assert(synSdc.isFile)
       assert(synSdf.isFile)
+      assert(enter.isFile)
       assert(stdinTcl.isFile)
       /** result of GENUS171*/
       assert(scratchPadOut.get("runtime.genus.cell_area").get.asInstanceOf[AreaAnnotationValue].value == 905.826)
