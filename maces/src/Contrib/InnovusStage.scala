@@ -302,12 +302,24 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
       assert(r._1)
 
       /** read qor json and convert necessary information here */
-
       val j = ujson.read(read(qorJson))("snapshots").arr.map(m => m("name").str -> m).toMap
 
-      def getAreaFromJson(name: String, key: String) = j(name)("metrics").arr.filter(k => k("name").str == key).head("value").str.replace(" um^2", "").toDouble
+      /** we currently not implement the metadata system,
+       * in case of phase with broken links,
+       * we copy all targets and remove broken link caused by EDA bug.
+       * */
+      os.walk(pwd, followLinks = false).filter(os.isLink).foreach { l =>
+        val t = os.readLink.absolute(l)
+        if (os.exists(t)) {
+          os.copy.over(t, l)
+        } else {
+          os.remove.all(l)
+        }
+      }
 
-      def getFinalAreaFromJson(key:String) = getAreaFromJson("route_design", key)
+      def getAreaFromJson(name: String, key: String): Double = j(name)("metrics").arr.filter(k => k("name").str == key).head("value").str.replace(" um^2", "").toDouble
+
+      def getFinalAreaFromJson(key: String): Double = getAreaFromJson("route_design", key)
 
       scratchPad = scratchPad add
         Annotation("runtime.innovus.export_db", InnovusDbPathAnnotationValue(innovusDb)) add
