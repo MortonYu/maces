@@ -287,11 +287,8 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
   class save(var scratchPad: ScratchPad) extends ProcessNode {
     def innovusDb: Path = generatedPath / (topName + "_database")
 
-    def qorJson: Path = workspace / "qor.json"
-
     def input: String =
       s"""set_db write_stream_virtual_connection false
-         |report_qor -format json -file ${qorJson.toString}
          |write_db ${innovusDb.toString}
          |""".stripMargin
 
@@ -300,46 +297,6 @@ case class InnovusStage(scratchPadIn: ScratchPad) extends CliStage {
         str.contains("End write_db save design")
       }
       assert(r._1)
-
-      /** read qor json and convert necessary information here */
-      val j = ujson.read(read(qorJson))("snapshots").arr.map(m => m("name").str -> m).toMap
-
-      /** we currently not implement the metadata system,
-       * in case of phase with broken links,
-       * we copy all targets and remove broken link caused by EDA bug.
-       * */
-      os.walk(pwd, followLinks = false).filter(os.isLink).foreach { l =>
-        val t = os.readLink.absolute(l)
-        if (os.exists(t)) {
-          os.copy.over(t, l)
-        } else {
-          os.remove.all(l)
-        }
-      }
-
-      def getAreaFromJson(name: String, key: String): Double = j(name)("metrics").arr.filter(k => k("name").str == key).head("value").str.replace(" um^2", "").toDouble
-
-      def getFinalAreaFromJson(key: String): Double = getAreaFromJson("route_design", key)
-
-      scratchPad = scratchPad add
-        Annotation("runtime.innovus.export_db", InnovusDbPathAnnotationValue(innovusDb)) add
-        Annotation("runtime.innovus.cell_area", AreaAnnotationValue(getFinalAreaFromJson("design.area"))) add
-        Annotation("runtime.innovus.area_io_area", AreaAnnotationValue(getFinalAreaFromJson("design.area.area_io"))) add
-        Annotation("runtime.innovus.blackbox_area", AreaAnnotationValue(getFinalAreaFromJson("design.area.blackbox"))) add
-        Annotation("runtime.innovus.buffer_area", AreaAnnotationValue(getFinalAreaFromJson("design.area.buffer"))) add
-        Annotation("runtime.innovus.combinatorial_area", AreaAnnotationValue(getFinalAreaFromJson("design.area.combinatorial"))) add
-        Annotation("runtime.innovus.icg_area", AreaAnnotationValue(getFinalAreaFromJson("design.area.icg"))) add
-        Annotation("runtime.innovus.inverter_area", AreaAnnotationValue(getFinalAreaFromJson("design.area.inverter"))) add
-        Annotation("runtime.innovus.io_area", AreaAnnotationValue(getFinalAreaFromJson("design.area.io"))) add
-        Annotation("runtime.innovus.iso_ls_area", AreaAnnotationValue(getFinalAreaFromJson("design.area.iso_ls"))) add
-        Annotation("runtime.innovus.latch_area", AreaAnnotationValue(getFinalAreaFromJson("design.area.latch"))) add
-        Annotation("runtime.innovus.logical_area", AreaAnnotationValue(getFinalAreaFromJson("design.area.logical"))) add
-        Annotation("runtime.innovus.macro_area", AreaAnnotationValue(getFinalAreaFromJson("design.area.macro"))) add
-        Annotation("runtime.innovus.physical_area", AreaAnnotationValue(getFinalAreaFromJson("design.area.physical"))) add
-        Annotation("runtime.innovus.power_switch_area", AreaAnnotationValue(getFinalAreaFromJson("design.area.power_switch"))) add
-        Annotation("runtime.innovus.register_area", AreaAnnotationValue(getFinalAreaFromJson("design.area.register"))) add
-        Annotation("runtime.innovus.sequential_area", AreaAnnotationValue(getFinalAreaFromJson("design.area.sequential"))) add
-        Annotation("runtime.innovus.std_cell_area", AreaAnnotationValue(getFinalAreaFromJson("design.area.std_cell")))
 
       (scratchPad, Some(new exit(scratchPad)))
     }
