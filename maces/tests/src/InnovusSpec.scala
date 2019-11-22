@@ -103,6 +103,26 @@ object InnovusSpec extends MacesTestSuite {
       ))
       val stage = InnovusStage(scratchPad)
       val scratchPadOut = stage.scratchPadOut
+
+      /** result of INNOVUS171*/
+      assert(scratchPadOut.get("runtime.innovus.register_area").get.asInstanceOf[AreaAnnotationValue].value == 298.5984)
+      assert(scratchPadOut.get("runtime.innovus.macro_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+      assert(scratchPadOut.get("runtime.innovus.inverter_area").get.asInstanceOf[AreaAnnotationValue].value == 45.02304)
+      assert(scratchPadOut.get("runtime.innovus.cell_area").get.asInstanceOf[AreaAnnotationValue].value == 883.43136)
+      assert(scratchPadOut.get("runtime.innovus.latch_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+      assert(scratchPadOut.get("runtime.innovus.area_io_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+      assert(scratchPadOut.get("runtime.innovus.buffer_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+      assert(scratchPadOut.get("runtime.innovus.physical_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+      assert(scratchPadOut.get("runtime.innovus.logical_area").get.asInstanceOf[AreaAnnotationValue].value == 883.43136)
+      assert(scratchPadOut.get("runtime.innovus.iso_ls_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+      assert(scratchPadOut.get("runtime.innovus.std_cell_area").get.asInstanceOf[AreaAnnotationValue].value == 883.43136)
+      assert(scratchPadOut.get("runtime.innovus.power_switch_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+      assert(scratchPadOut.get("runtime.innovus.sequential_area").get.asInstanceOf[AreaAnnotationValue].value == 306.99648)
+      assert(scratchPadOut.get("runtime.innovus.combinatorial_area").get.asInstanceOf[AreaAnnotationValue].value == 531.41184)
+      assert(scratchPadOut.get("runtime.innovus.io_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+      assert(scratchPadOut.get("runtime.innovus.icg_area").get.asInstanceOf[AreaAnnotationValue].value == 8.39808)
+      assert(scratchPadOut.get("runtime.innovus.blackbox_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+
     }
   }
 }

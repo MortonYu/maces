@@ -24,7 +24,11 @@ case class SdfPathAnnotationValue(path: Path) extends PathAnnotationValue
 
 case class TclPathAnnotationValue(path: Path) extends PathAnnotationValue
 
+case class JsonPathAnnotationValue(path: Path) extends PathAnnotationValue
+
 case class LefPathAnnotationValue(path: Path) extends PathAnnotationValue
+
+case class InnovusDbPathAnnotationValue(path: Path) extends PathAnnotationValue
 
 case class GeneratedFileAnnotationValue(path: RelPath) extends RelPathAnnotationValue
 
