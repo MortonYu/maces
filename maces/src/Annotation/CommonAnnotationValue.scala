@@ -4,6 +4,8 @@ import maces._
 import os._
 import scala.math.Ordered.orderingToOrdered
 
+case class NoAnnotationFoundException(msg: String) extends Exception(msg)
+
 case class TarsPathAnnotationValue(paths: Seq[Path]) extends PathsAnnotationValue
 
 case class RelTarsPathAnnotationValue(paths: Seq[RelPath]) extends RelPathsAnnotationValue
@@ -86,13 +88,14 @@ case class Library(name: String,
                    voltage: Double = 1.8,
                    temperature: Double = 25,
                    nominalType: String = "tt",
-                   libertyFile: Option[Path] = None,
-                   qrcTechFile: Option[Path] = None,
-                   vsimFile: Option[Path] = None,
-                   itfFile: Option[Path] = None,
-                   lefFile: Option[Path] = None,
-                   spiceFile: Option[Path] = None,
-                   gdsFile: Option[Path] = None) {
+                   voltageThreshold: Option[String] = Some("rvt"),
+                   libertyFile: Option[FilePath] = None,
+                   qrcTechFile: Option[FilePath] = None,
+                   vsimFile: Option[FilePath] = None,
+                   itfFile: Option[FilePath] = None,
+                   lefFile: Option[FilePath] = None,
+                   spiceFile: Option[FilePath] = None,
+                   gdsFile: Option[FilePath] = None) {
   nominalType.foreach(c => require(Set('s', 't', 'f').contains(c)))
   require(nominalType.length == 2)
 }
@@ -100,6 +103,8 @@ case class Library(name: String,
 case class HierarchicalModeAnnotationValue(value: String) extends AnnotationValue {
   require(Set("flat", "leaf", "hierarchical", "top").contains(value))
 }
+
+case class LibraryAnnotationValue(value: Library) extends AnnotationValue
 
 case class LibrariesAnnotationValue(value: Seq[Library]) extends AnnotationValue
 

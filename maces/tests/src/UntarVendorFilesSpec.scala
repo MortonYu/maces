@@ -12,8 +12,8 @@ object UntarVendorFilesSpec extends MacesTestSuite {
     test("annotated tar should be extracted") {
       rm ! testPath
       val scratchPad = ScratchPad(Set(
-        Annotation("vendor.tars", TarsPathAnnotationValue(Seq(resourcesDir / "files.tar.xz"))),
-        Annotation("vendor.internal_tars", RelTarsPathAnnotationValue(Seq(RelPath("files.tar.xz/internal_files.tar")))),
+        Annotation("runtime.untar.tars", TarsPathAnnotationValue(Seq(resourcesDir / "files.tar.xz"))),
+        Annotation("runtime.untar.internal_tars", RelTarsPathAnnotationValue(Seq(RelPath("files.tar.xz/internal_files.tar")))),
         Annotation("system.tar_cache", DirectoryPathAnnotationValue(testPath / "tar_cache"))
       ))
       UntarStage(scratchPad).scratchPadOut

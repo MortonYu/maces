@@ -8,14 +8,18 @@ import os._
 trait HasTarCache {
   var scratchPad: ScratchPad
 
-  def tarCache: Path = scratchPad.get("system.tar_cache").get.asInstanceOf[DirectoryPathAnnotationValue].path
+  def tarCache: Path = scratchPad.get("system.tar_cache") match {
+    case None => throw NoAnnotationFoundException("system.tar_cache")
+    case Some(DirectoryPathAnnotationValue(d)) => d
+  }
 }
 
 trait HasTarExternalFunction {
   def untar(file: Path, targetDirectory: Path) = {
-    /** clear all existed files*/
+    /** clear all existed files */
     remove.all(targetDirectory)
     makeDir.all(targetDirectory)
+
     /** external dependency: tar */
     proc("tar", "xf", file, "-C", targetDirectory).call()
   }
@@ -24,11 +28,13 @@ trait HasTarExternalFunction {
 case class UntarVendorFiles(scratchPadIn: ScratchPad) extends Phase with HasTarCache with HasTarExternalFunction {
   def transform: ScratchPad = {
     /** vendor.tars are std cell or PDK files provided by vendor. */
-    val tarFiles: Seq[Path] = scratchPad.get("vendor.tars").get.asInstanceOf[TarsPathAnnotationValue].paths
-    /** TODO: move this to InitializationStage*/
+    val tarFiles: Seq[Path] = scratchPad.get("runtime.untar.tars").get.asInstanceOf[TarsPathAnnotationValue].paths
+
+    /** TODO: move this to InitializationStage */
     makeDir.all(tarCache)
     tarFiles.foreach(f => untar(f, tarCache / f.last))
-    scratchPad
+    scratchPad delete
+      "runtime.untar.tars"
   }
 }
 
@@ -39,7 +45,7 @@ case class UntarInternalPackages(scratchPadIn: ScratchPad) extends Phase with Ha
    * Untar might will fail
    * */
   def transform: ScratchPad = {
-    val tarFiles: Seq[Path] = scratchPad.get("vendor.internal_tars").get.asInstanceOf[RelTarsPathAnnotationValue].paths.map(t => Path(t, tarCache))
+    val tarFiles: Seq[Path] = scratchPad.get("runtime.untar.internal_tars").get.asInstanceOf[RelTarsPathAnnotationValue].paths.map(t => Path(t, tarCache))
     val tarFilesRenamed: Seq[Path] = tarFiles.map { t =>
       val renamedPath = Path(t.toString + ".tmp")
       move(t, renamedPath)
@@ -47,7 +53,8 @@ case class UntarInternalPackages(scratchPadIn: ScratchPad) extends Phase with Ha
     }
     (tarFilesRenamed zip tarFiles) foreach (pair => untar(pair._1, pair._2))
     tarFilesRenamed foreach remove.all
-    scratchPad
+    scratchPad delete
+      "runtime.untar.internal_tars"
   }
 }
 

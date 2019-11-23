@@ -3,62 +3,65 @@ package maces.tests
 import ammonite.ops._
 import maces._
 import maces.annotation._
-import maces.contrib.cadence.InnovusStage
+import maces.contrib.cadence.{InnovusReportPhase, InnovusStage}
 import utest._
 
 object InnovusSpec extends MacesTestSuite {
+  val workspace = testPath / "workspace"
+
+  /** prepare GenusStage result,
+   * copy from resources, and sed the RESOURCESDIR from which
+   * */
+  lazy val genusStageDir: Path = {
+    val d = workspace / "GenusStage" / System.currentTimeMillis.toString
+    os.makeDir.all(d)
+    os.walk(resourcesDir / "genus_out").foreach(f => {
+      os.copy.into(f, d)
+    })
+    os.walk(d).foreach { f =>
+      os.proc("sed", "-i", s"s:RESOURCESDIR:${resourcesDir.toString}:g", f).call()
+    }
+    d
+  }
+
+  val netlists: Seq[Path] = Seq(genusStageDir / "GCD_syn.v")
+
+  val mmmc: Path = genusStageDir / "GCD_mmmc.tcl"
+
+  /** the runtime commercial EDA tool installation should be /opt/eda_tools/vendor/tool_name/tool,
+   * license should be /opt/eda_tools/vendor/vendor.lic
+   * maybe we need to provide a better way to execute this NDA-related test
+   * */
+  lazy val cadenceHome: Path = {
+    val default = Path("/opt/eda_tools/cadence")
+    if (default.isDir) default else {
+      println("no default test machine, please input the cadence installation path(for example: /opt/eda_tools/cadence):")
+      Path(scala.io.StdIn.readLine())
+    }
+  }
+
+  val innovusBin: Path = {
+    val default = cadenceHome / "INNOVUS" / "INNOVUS171" / "bin" / "innovus"
+    if (default.isFile) default else {
+      println("no default test machine, please input the innovus installation path(for example: /opt/eda_tools/cadence/INNOVUS/INNOVUS171):")
+      Path(scala.io.StdIn.readLine()) / "bin" / "innovus"
+    }
+  }
+
+  val licenseFile: Path = {
+    val default = cadenceHome / "cadence.lic"
+    if (default.isFile) default else {
+      println("no default test machine, please input the innovus license path:")
+      Path(scala.io.StdIn.readLine())
+    }
+  }
+
+  var scratchPad: ScratchPad = ScratchPad(Set())
+
   val tests: Tests = Tests {
-    test("innovus should synthesis") {
-      val workspace = testPath / "workspace"
-
-      /** prepare GenusStage result,
-       * copy from resources, and sed the RESOURCESDIR from which
-       * */
-      lazy val genusStageDir: Path = {
-        val d = workspace / "GenusStage" / System.currentTimeMillis.toString
-        os.makeDir.all(d)
-        os.walk(resourcesDir / "genus_out").foreach(f => {
-          os.copy.into(f, d)
-        })
-        os.walk(d).foreach { f =>
-          os.proc("sed", "-i", s"s:RESOURCESDIR:${resourcesDir.toString}:g", f).call()
-        }
-        d
-      }
-
-      val netlists: Seq[Path] = Seq(genusStageDir / "GCD_syn.v")
-
-      val mmmc: Path = genusStageDir / "GCD_mmmc.tcl"
-
-      /** the runtime commercial EDA tool installation should be /opt/eda_tools/vendor/tool_name/tool,
-       * license should be /opt/eda_tools/vendor/vendor.lic
-       * maybe we need to provide a better way to execute this NDA-related test
-       * */
-      lazy val cadenceHome: Path = {
-        val default = Path("/opt/eda_tools/cadence")
-        if (default.isDir) default else {
-          println("no default test machine, please input the cadence installation path(for example: /opt/eda_tools/cadence):")
-          Path(scala.io.StdIn.readLine())
-        }
-      }
-
-      val innovusBin: Path = {
-        val default = cadenceHome / "INNOVUS" / "INNOVUS171" / "bin" / "innovus"
-        if (default.isFile) default else {
-          println("no default test machine, please input the innovus installation path(for example: /opt/eda_tools/cadence/INNOVUS/INNOVUS171):")
-          Path(scala.io.StdIn.readLine()) / "bin" / "innovus"
-        }
-      }
-
-      val licenseFile: Path = {
-        val default = cadenceHome / "cadence.lic"
-        if (default.isFile) default else {
-          println("no default test machine, please input the innovus license path:")
-          Path(scala.io.StdIn.readLine())
-        }
-      }
-
-      val scratchPad = ScratchPad(Set(
+    test("innovus should place and route") {
+      /** add necessary test for [[InnovusStage]]*/
+      scratchPad = ScratchPad(Set(
         Annotation("runtime.innovus.stdin_shell", GeneratedFileAnnotationValue("par.tcl")),
         Annotation("runtime.innovus.enter_shell", GeneratedFileAnnotationValue("enter.sh")),
         Annotation("runtime.innovus.workspace", DirectoryPathAnnotationValue(workspace)),
@@ -101,28 +104,30 @@ object InnovusSpec extends MacesTestSuite {
         Annotation("runtime.innovus.mmmc_tcl", TclPathAnnotationValue(mmmc)),
         Annotation("runtime.innovus.libraries", LibrariesAnnotationValue(asap7Libraries))
       ))
-      val stage = InnovusStage(scratchPad)
-      val scratchPadOut = stage.scratchPadOut
+      scratchPad = InnovusStage(scratchPad).scratchPadOut
+    }
+    test("innovus should report") {
+      /** add necessary test for [[InnovusStage]]*/
+//      scratchPad.annotations
 
-      /** result of INNOVUS171*/
-      assert(scratchPadOut.get("runtime.innovus.register_area").get.asInstanceOf[AreaAnnotationValue].value == 298.5984)
-      assert(scratchPadOut.get("runtime.innovus.macro_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
-      assert(scratchPadOut.get("runtime.innovus.inverter_area").get.asInstanceOf[AreaAnnotationValue].value == 45.02304)
-      assert(scratchPadOut.get("runtime.innovus.cell_area").get.asInstanceOf[AreaAnnotationValue].value == 883.43136)
-      assert(scratchPadOut.get("runtime.innovus.latch_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
-      assert(scratchPadOut.get("runtime.innovus.area_io_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
-      assert(scratchPadOut.get("runtime.innovus.buffer_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
-      assert(scratchPadOut.get("runtime.innovus.physical_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
-      assert(scratchPadOut.get("runtime.innovus.logical_area").get.asInstanceOf[AreaAnnotationValue].value == 883.43136)
-      assert(scratchPadOut.get("runtime.innovus.iso_ls_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
-      assert(scratchPadOut.get("runtime.innovus.std_cell_area").get.asInstanceOf[AreaAnnotationValue].value == 883.43136)
-      assert(scratchPadOut.get("runtime.innovus.power_switch_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
-      assert(scratchPadOut.get("runtime.innovus.sequential_area").get.asInstanceOf[AreaAnnotationValue].value == 306.99648)
-      assert(scratchPadOut.get("runtime.innovus.combinatorial_area").get.asInstanceOf[AreaAnnotationValue].value == 531.41184)
-      assert(scratchPadOut.get("runtime.innovus.io_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
-      assert(scratchPadOut.get("runtime.innovus.icg_area").get.asInstanceOf[AreaAnnotationValue].value == 8.39808)
-      assert(scratchPadOut.get("runtime.innovus.blackbox_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
-
+      //      /** result of INNOVUS171*/
+      //      assert(scratchPadOut.get("runtime.innovus.register_area").get.asInstanceOf[AreaAnnotationValue].value == 298.5984)
+      //      assert(scratchPadOut.get("runtime.innovus.macro_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+      //      assert(scratchPadOut.get("runtime.innovus.inverter_area").get.asInstanceOf[AreaAnnotationValue].value == 45.02304)
+      //      assert(scratchPadOut.get("runtime.innovus.cell_area").get.asInstanceOf[AreaAnnotationValue].value == 883.43136)
+      //      assert(scratchPadOut.get("runtime.innovus.latch_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+      //      assert(scratchPadOut.get("runtime.innovus.area_io_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+      //      assert(scratchPadOut.get("runtime.innovus.buffer_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+      //      assert(scratchPadOut.get("runtime.innovus.physical_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+      //      assert(scratchPadOut.get("runtime.innovus.logical_area").get.asInstanceOf[AreaAnnotationValue].value == 883.43136)
+      //      assert(scratchPadOut.get("runtime.innovus.iso_ls_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+      //      assert(scratchPadOut.get("runtime.innovus.std_cell_area").get.asInstanceOf[AreaAnnotationValue].value == 883.43136)
+      //      assert(scratchPadOut.get("runtime.innovus.power_switch_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+      //      assert(scratchPadOut.get("runtime.innovus.sequential_area").get.asInstanceOf[AreaAnnotationValue].value == 306.99648)
+      //      assert(scratchPadOut.get("runtime.innovus.combinatorial_area").get.asInstanceOf[AreaAnnotationValue].value == 531.41184)
+      //      assert(scratchPadOut.get("runtime.innovus.io_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
+      //      assert(scratchPadOut.get("runtime.innovus.icg_area").get.asInstanceOf[AreaAnnotationValue].value == 8.39808)
+      //      assert(scratchPadOut.get("runtime.innovus.blackbox_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)
     }
   }
 }

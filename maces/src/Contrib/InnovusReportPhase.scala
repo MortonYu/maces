@@ -5,7 +5,7 @@ import maces.annotation._
 import maces.phase._
 import os._
 
-case class InnovusSpecificDelayReportPhase(scratchPadIn: ScratchPad) extends CliStage {
+case class InnovusReportPhase(scratchPadIn: ScratchPad) extends CliStage {
 
   override def workspace: Path = scratchPad.get("runtime.innovus.workspace").get.asInstanceOf[DirectoryPathAnnotationValue].path
 
