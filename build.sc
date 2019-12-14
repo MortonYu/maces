@@ -9,7 +9,7 @@ object maces extends ScalaModule with PublishModule {
     ivy"com.lihaoyi::os-lib:0.4.0",
     ivy"com.lihaoyi::upickle:0.8.0",
     ivy"com.lihaoyi::ammonite-ops:1.8.1",
-    ivy"edu.berkeley.cs::chisel3:3.2-SNAPSHOT",
+    ivy"edu.berkeley.cs::chisel3:3.2.1",
   )
 
   object tests extends Tests {

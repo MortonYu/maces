@@ -7,60 +7,61 @@ import maces.contrib.cadence.{InnovusReportPhase, InnovusStage}
 import utest._
 
 object InnovusSpec extends MacesTestSuite {
-  val workspace = testPath / "workspace"
-
-  /** prepare GenusStage result,
-   * copy from resources, and sed the RESOURCESDIR from which
-   * */
-  lazy val genusStageDir: Path = {
-    val d = workspace / "GenusStage" / System.currentTimeMillis.toString
-    os.makeDir.all(d)
-    os.walk(resourcesDir / "genus_out").foreach(f => {
-      os.copy.into(f, d)
-    })
-    os.walk(d).foreach { f =>
-      os.proc("sed", "-i", s"s:RESOURCESDIR:${resourcesDir.toString}:g", f).call()
-    }
-    d
-  }
-
-  val netlists: Seq[Path] = Seq(genusStageDir / "GCD_syn.v")
-
-  val mmmc: Path = genusStageDir / "GCD_mmmc.tcl"
-
-  /** the runtime commercial EDA tool installation should be /opt/eda_tools/vendor/tool_name/tool,
-   * license should be /opt/eda_tools/vendor/vendor.lic
-   * maybe we need to provide a better way to execute this NDA-related test
-   * */
-  lazy val cadenceHome: Path = {
-    val default = Path("/opt/eda_tools/cadence")
-    if (default.isDir) default else {
-      println("no default test machine, please input the cadence installation path(for example: /opt/eda_tools/cadence):")
-      Path(scala.io.StdIn.readLine())
-    }
-  }
-
-  val innovusBin: Path = {
-    val default = cadenceHome / "INNOVUS" / "INNOVUS171" / "bin" / "innovus"
-    if (default.isFile) default else {
-      println("no default test machine, please input the innovus installation path(for example: /opt/eda_tools/cadence/INNOVUS/INNOVUS171):")
-      Path(scala.io.StdIn.readLine()) / "bin" / "innovus"
-    }
-  }
-
-  val licenseFile: Path = {
-    val default = cadenceHome / "cadence.lic"
-    if (default.isFile) default else {
-      println("no default test machine, please input the innovus license path:")
-      Path(scala.io.StdIn.readLine())
-    }
-  }
 
   var scratchPad: ScratchPad = ScratchPad(Set())
 
   val tests: Tests = Tests {
     test("innovus should place and route") {
-      /** add necessary test for [[InnovusStage]]*/
+      def workspace = testPath / "workspace"
+
+      /** prepare GenusStage result,
+       * copy from resources, and sed the RESOURCESDIR from which
+       * */
+      lazy val genusStageDir: Path = {
+        val d = workspace / "GenusStage" / System.currentTimeMillis.toString
+        os.makeDir.all(d)
+        os.walk(resourcesDir / "genus_out").foreach(f => {
+          os.copy.into(f, d)
+        })
+        os.walk(d).foreach { f =>
+          os.proc("sed", "-i", s"s:RESOURCESDIR:${resourcesDir.toString}:g", f).call()
+        }
+        d
+      }
+
+      val netlists: Seq[Path] = Seq(genusStageDir / "GCD_syn.v")
+
+      val mmmc: Path = genusStageDir / "GCD_mmmc.tcl"
+
+      /** the runtime commercial EDA tool installation should be /opt/eda_tools/vendor/tool_name/tool,
+       * license should be /opt/eda_tools/vendor/vendor.lic
+       * maybe we need to provide a better way to execute this NDA-related test
+       * */
+      lazy val cadenceHome: Path = {
+        val default = Path("/opt/eda_tools/cadence")
+        if (default.isDir) default else {
+          println("no default test machine, please input the cadence installation path(for example: /opt/eda_tools/cadence):")
+          Path(scala.io.StdIn.readLine())
+        }
+      }
+
+      val innovusBin: Path = {
+        val default = cadenceHome / "INNOVUS" / "INNOVUS171" / "bin" / "innovus"
+        if (default.isFile) default else {
+          println("no default test machine, please input the innovus installation path(for example: /opt/eda_tools/cadence/INNOVUS/INNOVUS171):")
+          Path(scala.io.StdIn.readLine()) / "bin" / "innovus"
+        }
+      }
+
+      val licenseFile: Path = {
+        val default = cadenceHome / "cadence.lic"
+        if (default.isFile) default else {
+          println("no default test machine, please input the innovus license path:")
+          Path(scala.io.StdIn.readLine())
+        }
+      }
+
+      /** add necessary test for [[InnovusStage]] */
       scratchPad = ScratchPad(Set(
         Annotation("runtime.innovus.stdin_shell", GeneratedFileAnnotationValue("par.tcl")),
         Annotation("runtime.innovus.enter_shell", GeneratedFileAnnotationValue("enter.sh")),
@@ -107,9 +108,7 @@ object InnovusSpec extends MacesTestSuite {
       scratchPad = InnovusStage(scratchPad).scratchPadOut
     }
     test("innovus should report") {
-      /** add necessary test for [[InnovusStage]]*/
-//      scratchPad.annotations
-
+      /** add necessary test for [[InnovusStage]] */
       //      /** result of INNOVUS171*/
       //      assert(scratchPadOut.get("runtime.innovus.register_area").get.asInstanceOf[AreaAnnotationValue].value == 298.5984)
       //      assert(scratchPadOut.get("runtime.innovus.macro_area").get.asInstanceOf[AreaAnnotationValue].value == 0.0)

@@ -26,6 +26,8 @@ case class SdfPathAnnotationValue(path: Path) extends PathAnnotationValue
 
 case class TclPathAnnotationValue(path: Path) extends PathAnnotationValue
 
+case class LayerMapPathAnnotationValue(path: Path) extends PathAnnotationValue
+
 case class JsonPathAnnotationValue(path: Path) extends PathAnnotationValue
 
 case class LefPathAnnotationValue(path: Path) extends PathAnnotationValue
@@ -48,7 +50,11 @@ case class InstanceNameAnnotationValue(value: String) extends AnnotationValue
 
 case class CoreLimitAnnotationValue(value: Int) extends AnnotationValue
 
+case class RuleDecksAnnotationValue(value: Seq[RuleDeck]) extends AnnotationValue
+
 case class ProcessNodeAnnotationValue(value: Int) extends AnnotationValue
+
+case class GridUnitAnnotationValue(value: Double) extends AnnotationValue
 
 case class AreaAnnotationValue(value: Double) extends AnnotationValue
 
@@ -89,13 +95,13 @@ case class Library(name: String,
                    temperature: Double = 25,
                    nominalType: String = "tt",
                    voltageThreshold: Option[String] = Some("rvt"),
-                   libertyFile: Option[FilePath] = None,
-                   qrcTechFile: Option[FilePath] = None,
-                   vsimFile: Option[FilePath] = None,
-                   itfFile: Option[FilePath] = None,
-                   lefFile: Option[FilePath] = None,
-                   spiceFile: Option[FilePath] = None,
-                   gdsFile: Option[FilePath] = None) {
+                   libertyFile: Option[Path] = None,
+                   qrcTechFile: Option[Path] = None,
+                   vsimFile: Option[Path] = None,
+                   itfFile: Option[Path] = None,
+                   lefFile: Option[Path] = None,
+                   spiceFile: Option[Path] = None,
+                   gdsFile: Option[Path] = None) {
   nominalType.foreach(c => require(Set('s', 't', 'f').contains(c)))
   require(nominalType.length == 2)
 }
@@ -189,6 +195,10 @@ case class PlacementConstraint(path: String,
                                topLayer: Option[String] = None,
                                layers: Option[Seq[String]] = None,
                                obstructionTypes: Option[Seq[String]] = None)
+
+case class RuleDeck(name: String,
+                    path: Path,
+                    tool: String)
 
 case class PlacementConstraintsAnnotationValue(values: Seq[PlacementConstraint]) extends AnnotationValue
 

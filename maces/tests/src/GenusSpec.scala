@@ -93,7 +93,8 @@ object GenusSpec extends MacesTestSuite {
       assert(synSdf.isFile)
       assert(enter.isFile)
       assert(stdinTcl.isFile)
-      /** result of GENUS172*/
+
+      /** result of GENUS172 */
       assert(scratchPadOut.get("runtime.genus.cell_area").get.asInstanceOf[AreaAnnotationValue].value == 905.826)
       assert(scratchPadOut.get("runtime.genus.net_area").get.asInstanceOf[AreaAnnotationValue].value == 382.791)
       assert(scratchPadOut.get("runtime.genus.max_fanout").get.asInstanceOf[FanOutAnnotationValue].value == 67.0)

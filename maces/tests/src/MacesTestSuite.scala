@@ -12,7 +12,7 @@ abstract class MacesTestSuite extends TestSuite {
 
   def testPath()(implicit testPath: utest.framework.TestPath) = Path(s"test_run_dir/${this.getClass.getSimpleName.dropRight(1)}/" + sanitizePath(testPath.value.reduce(_ + _)), pwd)
 
-  def resourcesDir = Path("maces/tests/resources", pwd)
+  def resourcesDir = Path(getClass.getResource("/").getPath)
 
   override def utestFormatter: Formatter = new Formatter {
     override def exceptionStackFrameHighlighter(s: StackTraceElement): Boolean = {
