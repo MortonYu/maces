@@ -37,6 +37,7 @@ case class Annotation(key: AnnotationHierarchy, value: AnnotationValue)
 
 /** [[ScratchPad]] is used for store [[Annotation]], organize, find, add */
 case class ScratchPad(annotations: Set[Annotation]) {
+  def mapAnnotation(f: Annotation => Annotation): ScratchPad = ScratchPad(annotations.map(f))
   def add(that: Set[Annotation]): ScratchPad = ScratchPad(annotations ++ that)
 
   def add(that: Annotation): ScratchPad = add(Set(that))

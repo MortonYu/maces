@@ -8,6 +8,7 @@ case class NoAnnotationFoundException(msg: String) extends Exception(msg)
 
 case class TarsPathAnnotationValue(paths: Seq[Path]) extends PathsAnnotationValue
 
+
 case class RelTarsPathAnnotationValue(paths: Seq[RelPath]) extends RelPathsAnnotationValue
 
 case class BinPathAnnotationValue(path: Path) extends PathAnnotationValue
@@ -45,6 +46,8 @@ case class SdfsPathAnnotationValue(paths: Seq[Path]) extends PathsAnnotationValu
 case class LefsPathAnnotationValue(paths: Seq[Path]) extends PathsAnnotationValue
 
 case class LibertyCellLibrariesPathAnnotationValue(paths: Seq[Path]) extends PathsAnnotationValue
+
+case class LibraryInstalledAnnotationValue(value: Boolean) extends AnnotationValue
 
 case class InstanceNameAnnotationValue(value: String) extends AnnotationValue
 
