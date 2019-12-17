@@ -13,8 +13,14 @@ object ASAP7Spec extends MacesTestSuite {
 
       val pdkStageRunDir = workspace / "PDKStage" / System.currentTimeMillis.toString
 
+      val pdkDownloadPath = {
+        val p = Path(sys.env("PDK_DOWNLOAD_PATH"))
+        require(p.isDir, "PDK_DOWNLOAD_PATH is not a valid directory.")
+        p
+      }
+
       val scratchPad = ScratchPad(Set(
-        Annotation("user.input.pdk.download_dir", DirectoryPathAnnotationValue(os.Path("/home/sequencer/Documents/projects/asap7"))),
+        Annotation("user.input.pdk.download_dir", DirectoryPathAnnotationValue(pdkDownloadPath)),
         Annotation("system.tar_cache", DirectoryPathAnnotationValue(pdkStageRunDir / "cache"))
       ))
       val stage = ASAP7Stage(scratchPad)

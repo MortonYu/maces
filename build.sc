@@ -15,14 +15,13 @@ object maces extends ScalaModule with PublishModule {
 
   object tests extends Tests {
     def ivyDeps = Agg(
-      ivy"com.lihaoyi::ammonite-ops:1.8.1",
       ivy"com.lihaoyi::utest:0.7.2"
     )
 
     def testFrameworks = Seq("utest.runner.Framework")
   }
 
-  def publishVersion = "0.0.1"
+  def publishVersion = "0.1.0"
 
   def pomSettings = PomSettings(
     description = "maces",
